@@ -10,8 +10,10 @@ headers = {
 }
 
 catalog = {}
+product_urls = {}
 
-for page in range(0, 1078, 36):
+# get info on all products and their primary image url:
+for page in range(0, 1080, 36):
     j = requests.get("https://uk.pandora.net/en/jewellery/?start={}&amp;sz=36&amp;format=page-element".format(page))
     jewellery = BeautifulSoup(j.content, 'lxml')
 
@@ -20,6 +22,23 @@ for page in range(0, 1078, 36):
     for item in productList:
         info_dict = json.loads(item['value'])
         catalog[info_dict["product_id"]] = info_dict
+        product_urls[info_dict["product_id"]] = info_dict['product_url']
+
+
+# get all images for every product:
+for iD, url in product_urls.items():
+    site = requests.get(url)
+    product = BeautifulSoup(site.content, 'lxml')
+
+    #list of image_urls
+    imageList = product.find_all('a', class_='main-image', attrs={'href': True})
+
+    url_list = []
+
+    for item in imageList:
+        url_list.append(item['href'])
+
+    catalog[iD]['product_image_url'] = url_list
 
 
 #save the catalog Dict:
@@ -31,5 +50,3 @@ a_file.close()
 a_file = open("catalog.json", "r")
 catalog = a_file.read()
 a_file.close()
-
-print('finito')
