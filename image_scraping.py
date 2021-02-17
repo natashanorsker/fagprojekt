@@ -4,9 +4,11 @@
 import requests
 import json
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 CK={} (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+    "Connection": 'keep-alive'
 }
 
 catalog = {}
@@ -26,17 +28,25 @@ for page in range(0, 1080, 36):
 
 
 # get all images for every product:
-for iD, url in product_urls.items():
+for iD, url in tqdm(product_urls.items()):
     site = requests.get(url)
     product = BeautifulSoup(site.content, 'lxml')
 
-    #list of image_urls
+    # list of image_urls
     imageList = product.find_all('a', class_='main-image', attrs={'href': True})
 
     url_list = []
 
     for item in imageList:
         url_list.append(item['href'])
+
+    spin360 = product.find_all('img', class_='spin-reel', attrs={'data-frames': True, 'data-images': True})
+
+    if spin360:
+        # get all the spin360 images
+        for frame in range(1, int(spin360[0]['data-frames'])):
+            i = str(frame).zfill(2)
+            url_list.append(spin360[0]['data-images'].replace("##", i))
 
     catalog[iD]['product_image_url'] = url_list
 
@@ -48,5 +58,5 @@ a_file.close()
 
 #to open the catalog (also in another script):
 a_file = open("catalog.json", "r")
-catalog = a_file.read()
+catalog = json.loads(a_file.read())
 a_file.close()
