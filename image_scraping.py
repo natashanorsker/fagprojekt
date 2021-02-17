@@ -5,9 +5,6 @@ import requests
 import json
 from bs4 import BeautifulSoup
 
-baseurl = "https://uk.pandora.net/en/jewellery/"
-baseurl = "https://uk.pandora.net/en/jewellery/?start=36&amp;sz=36&amp;format=page-element"
-
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'
 }
@@ -24,3 +21,15 @@ for page in range(0, 1078, 36):
         info_dict = json.loads(item['value'])
         catalog[info_dict["product_id"]] = info_dict
 
+
+#save the catalog Dict:
+a_file = open("catalog.json", "w")
+json.dump(catalog, a_file)
+a_file.close()
+
+#to open the catalog (also in another script):
+a_file = open("catalog.json", "r")
+catalog = a_file.read()
+a_file.close()
+
+print('finito')
