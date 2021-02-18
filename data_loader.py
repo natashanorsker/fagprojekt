@@ -11,7 +11,7 @@ consent = input('Warning: downloading a heck of a lot of images to your computer
 if consent in ['y', 'yes', 'hell ya', 'ja', 'jeps', 'oui', 'tres bien']:
 
     # Parent Directory path (make a DATA directory for storing the data)
-    data_dir = os.path.join(os.getcwd(), 'DATA')
+    data_dir = os.path.join(os.getcwd(), 'data')
 
     try:
         os.chdir(data_dir)
@@ -52,7 +52,7 @@ if consent in ['y', 'yes', 'hell ya', 'ja', 'jeps', 'oui', 'tres bien']:
 
                 except:
                     text_file = open('../Not_found_imgs.txt', "a")
-                    text_file.write("Product: {},  URL:  {}".format(product, img_urls[i]))
+                    text_file.write("Product: {},  URL:  {} \n".format(product, img_urls[i]))
                     text_file.close()
                     pass
 
