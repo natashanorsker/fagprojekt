@@ -1,4 +1,3 @@
-#from John Watson Rooney: https://www.youtube.com/watch?v=nCuPv3tf2Hg&t=84s
 
 # imports
 import requests
@@ -50,7 +49,7 @@ for iD, url in tqdm(product_urls.items()):
 
     catalog[iD]['product_image_url'] = url_list
 
-
+'''
 #save the catalog Dict:
 a_file = open("catalog.json", "w")
 json.dump(catalog, a_file)
@@ -60,3 +59,4 @@ a_file.close()
 a_file = open("catalog.json", "r")
 catalog = json.loads(a_file.read())
 a_file.close()
+'''
