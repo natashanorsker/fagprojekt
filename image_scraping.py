@@ -49,12 +49,13 @@ for iD, url in tqdm(product_urls.items()):
 
     catalog[iD]['product_image_url'] = url_list
 
-'''
+
 #save the catalog Dict:
 a_file = open("catalog.json", "w")
 json.dump(catalog, a_file)
 a_file.close()
 
+'''
 #to open the catalog (also in another script):
 a_file = open("catalog.json", "r")
 catalog = json.loads(a_file.read())

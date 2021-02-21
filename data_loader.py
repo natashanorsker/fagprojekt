@@ -68,6 +68,9 @@ def data_retriever(directory_path, catalog):
             with open("../retrieved.txt", "w") as f:
                 json.dump(products_done, f)
 
+    #change back to the original directory:
+    os.chdir(directory_path)
+
 
 
 
@@ -96,7 +99,13 @@ def rotated_image_generator(directory_path, rotation_range = 180, total_images=4
 
     # get list of all jpg image files in directory
     imgs = glob.glob("*.jpg")
-    product = imgs[1][:-7] #since the file is always saved as "productiD..._02.jpeg.."
+    #figure out what to call the new images (ie product_07.jpg)
+    name_suffix = len(imgs)
+
+    if name_suffix >= 40:
+        return
+
+    product = imgs[0][:-7] #since the file is always saved as "productiD..._02.jpeg.."
 
     #imgs to array only contains catalog images that doesn't have a model in it (ie. the mean pixel value is over 200)
     imgs_to_array = [img_to_array(load_img(x)) for x in imgs if np.mean(img_to_array(load_img(x))) > 200]
@@ -111,9 +120,6 @@ def rotated_image_generator(directory_path, rotation_range = 180, total_images=4
         zoom_range=zoom_range,
         horizontal_flip=horizontal_flip,
         fill_mode=fill_mode)
-
-    #figure out what to call the new images (ie product_07.jpg)
-    name_suffix = len(imgs)
 
     for i in range(len(imgs_to_array), total_images):  # we want 40 images per product
         # choose at random from images:
@@ -153,8 +159,8 @@ if __name__ == "__main__":
     # download the product images from pandoras website:
     data_retriever(os.getcwd(), catalog)
 
-    data_dir = os.getcwd()
-    sub_dir_list = os.listdir()
+    data_dir = os.path.join(os.getcwd(), 'data')
+    sub_dir_list = os.listdir(data_dir)
 
     # augment the product images so that there are 40 images per product
     # - we want to do this for every subdirectory in the 'data' directory:
