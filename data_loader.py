@@ -161,3 +161,6 @@ if __name__ == "__main__":
     for sub_dir in tqdm(sub_dir_list):
         path = os.path.join(data_dir, sub_dir)
         rotated_image_generator(path)
+
+
+#lol
