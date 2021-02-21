@@ -162,5 +162,3 @@ if __name__ == "__main__":
         path = os.path.join(data_dir, sub_dir)
         rotated_image_generator(path)
 
-
-#lol
