@@ -2,16 +2,26 @@ import os
 import json
 import urllib.request
 from tqdm import tqdm
-import sys
-from PIL import Image
-from io import BytesIO
+import glob
+import numpy as np
+from numpy import expand_dims
+from numpy.random import seed
+from keras.preprocessing.image import ImageDataGenerator, load_img, save_img, img_to_array, array_to_img
+from matplotlib import pyplot
+import random
 
-consent = input('Warning: downloading a heck of a lot of images to your computer. Do you wish to proceed? [y/n]:  ')
 
-if consent in ['y', 'yes', 'hell ya', 'ja', 'jeps', 'oui', 'tres bien']:
+def data_retriever(directory_path, catalog):
+    '''
+    uses the 'product_image_url'-s from the catalog to download all the product images for every product in the catalog.
+    Creates a main directory 'data' and subdirectories for every product to store the images.
+    :param directory_path: The directory-path where the 'data'-directory should be created
+    :param catalog: The catalog of all the products (can be found on github or can be created by running the image_scraper.py file)
+    :return: directories with product images
+    '''
 
     # Parent Directory path (make a DATA directory for storing the data)
-    data_dir = os.path.join(os.getcwd(), 'data')
+    data_dir = os.path.join(directory_path, 'data')
 
     try:
         os.chdir(data_dir)
@@ -19,10 +29,7 @@ if consent in ['y', 'yes', 'hell ya', 'ja', 'jeps', 'oui', 'tres bien']:
         os.mkdir(data_dir)
         os.chdir(data_dir)
 
-    # open the product catalog:
-    a_file = open("../catalog.json", "r")
-    catalog = json.loads(a_file.read())
-    a_file.close()
+    print('downloading a heck of a lot of images to your computer')
 
     # file that stores products already looked up
     if os.path.isfile('retrieved.txt'):
@@ -36,6 +43,7 @@ if consent in ['y', 'yes', 'hell ya', 'ja', 'jeps', 'oui', 'tres bien']:
 
     for product, info in tqdm(catalog.items()):
         if product not in products_done.keys():
+            print('Retrieving images of product {}'.format(product))
 
             new_dir = os.path.join(data_dir, product)
             try:
@@ -59,3 +67,97 @@ if consent in ['y', 'yes', 'hell ya', 'ja', 'jeps', 'oui', 'tres bien']:
             products_done[product] = True
             with open("../retrieved.txt", "w") as f:
                 json.dump(products_done, f)
+
+
+
+
+def rotated_image_generator(directory_path, rotation_range = 180, total_images=40,
+        width_shift_range=0.1,
+        height_shift_range=0.1,
+        shear_range=0,
+        zoom_range=0.1,
+        horizontal_flip=True,
+        fill_mode='nearest', save=True, show=False):
+    '''
+    :param directory_path: (str) the directory where the images are stored (should be the subdirectories in the 'data' directory)
+    :param rotation_range: (int) the range of the image rotation (between 0-360 degrees)
+    :param total_images: (int)
+    :param width_shift_range:
+    :param height_shift_range:
+    :param shear_range:
+    :param zoom_range:
+    :param horizontal_flip:
+    :param fill_mode:
+    :param save: (bool) if to save the images to the computer or not
+    :param show: (bool) if to show the images or not
+    :return:
+    '''
+    os.chdir(directory_path)
+
+    # get list of all jpg image files in directory
+    imgs = glob.glob("*.jpg")
+    product = imgs[1][:-7] #since the file is always saved as "productiD..._02.jpeg.."
+
+    #imgs to array only contains catalog images that doesn't have a model in it (ie. the mean pixel value is over 200)
+    imgs_to_array = [img_to_array(load_img(x)) for x in imgs if np.mean(img_to_array(load_img(x))) > 200]
+
+    assert len(imgs_to_array) > 0, 'No images to rotate! :('
+
+    # ImageDataGenerator rotation
+    datagen = ImageDataGenerator(rotation_range=rotation_range,
+        width_shift_range=width_shift_range,
+        height_shift_range=height_shift_range,
+        shear_range=shear_range,
+        zoom_range=zoom_range,
+        horizontal_flip=horizontal_flip,
+        fill_mode=fill_mode)
+
+    #figure out what to call the new images (ie product_07.jpg)
+    name_suffix = len(imgs)
+
+    for i in range(len(imgs_to_array), total_images):  # we want 40 images per product
+        # choose at random from images:
+        data = random.choice(imgs_to_array)
+        # specify name of image to save as
+        img_name = product + '_' + str(name_suffix).zfill(2) + '_AU.jpg'
+
+        # iterator
+        aug_iter = datagen.flow(expand_dims(data, 0), batch_size=1)
+
+        # generate batch of images
+        image = next(aug_iter)[0].astype('uint8')
+
+        name_suffix += 1
+
+        if save:
+            save_img(img_name, image)
+
+        if show:
+            # plot raw pixel data
+            pyplot.imshow(image)
+            pyplot.show()
+
+
+if __name__ == "__main__":
+
+    # set seed
+    # important in order to get the same rotated images:
+    random.seed(420)
+    seed(420)
+
+    # open the product catalog:
+    a_file = open("catalog.json", "r")
+    catalog = json.loads(a_file.read())
+    a_file.close()
+
+    # download the product images from pandoras website:
+    data_retriever(os.getcwd(), catalog)
+
+    data_dir = os.getcwd()
+    sub_dir_list = os.listdir()
+
+    # augment the product images so that there are 40 images per product
+    # - we want to do this for every subdirectory in the 'data' directory:
+    for sub_dir in tqdm(sub_dir_list):
+        path = os.path.join(data_dir, sub_dir)
+        rotated_image_generator(path)
