@@ -29,7 +29,7 @@ def data_retriever(directory_path, catalog):
         os.mkdir(data_dir)
         os.chdir(data_dir)
 
-    print('downloading a heck of a lot of images to your computer')
+    print('Downloading a heck of a lot of images to your computer')
 
     # file that stores products already looked up
     if os.path.isfile('retrieved.txt'):
@@ -43,7 +43,6 @@ def data_retriever(directory_path, catalog):
 
     for product, info in tqdm(catalog.items()):
         if product not in products_done.keys():
-            print('Retrieving images of product {}'.format(product))
 
             new_dir = os.path.join(data_dir, product)
             try:
@@ -104,6 +103,8 @@ def rotated_image_generator(directory_path, rotation_range = 180, total_images=4
 
     if name_suffix >= 40:
         return
+
+    assert len(imgs) > 0, 'Folder at {} contains no images! :('.format(directory_path)
 
     product = imgs[0][:-7] #since the file is always saved as "productiD..._02.jpeg.."
 
