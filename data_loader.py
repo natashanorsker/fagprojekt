@@ -29,8 +29,6 @@ def data_retriever(directory_path, catalog):
         os.mkdir(data_dir)
         os.chdir(data_dir)
 
-    print('Downloading a heck of a lot of images to your computer')
-
     # file that stores products already looked up
     if os.path.isfile('retrieved.txt'):
         with open('retrieved.txt', 'r') as f:
@@ -40,8 +38,9 @@ def data_retriever(directory_path, catalog):
         with open("retrieved.txt", "w") as f:
             json.dump(products_done, f)
 
-
-    for product, info in tqdm(catalog.items()):
+    all_items = tqdm(catalog.items())
+    for product, info in all_items:
+        all_items.set_postfix_str('Downloading a heck of a lot of images to your computer')
         if product not in products_done.keys():
 
             new_dir = os.path.join(data_dir, product)
@@ -161,11 +160,12 @@ if __name__ == "__main__":
     data_retriever(os.getcwd(), catalog)
 
     data_dir = os.path.join(os.getcwd(), 'data')
-    sub_dir_list = os.listdir(data_dir)
+    sub_dir_list = tqdm(os.listdir(data_dir))
 
     # augment the product images so that there are 40 images per product
     # - we want to do this for every subdirectory in the 'data' directory:
-    for sub_dir in tqdm(sub_dir_list):
+    for sub_dir in sub_dir_list:
+        sub_dir_list.set_postfix_str('Creating a heck of a loads of images on your computer')
         path = os.path.join(data_dir, sub_dir)
         rotated_image_generator(path)
 
