@@ -12,7 +12,8 @@ from keras.preprocessing.image import ImageDataGenerator, load_img, save_img, im
 from matplotlib import pyplot
 import random
 from PIL import Image
-#from image_scraping import file_from_json
+from nltk.stem import PorterStemmer
+ps = PorterStemmer()
 
 
 def dict_from_json(path="catalog.json"):
@@ -155,6 +156,38 @@ def rotated_image_generator(directory_path, rotation_range = 180, total_images=4
             # plot raw pixel data
             pyplot.imshow(image)
             pyplot.show()
+
+
+def sort_by_category(catalog, categories = {'ring': [], 'necklace': [], 'charm': [], 'earring': [], 'bracelet': [], 'misc': []}):
+
+    categories_list = list(categories.keys())
+    stem_categories = [ps.stem(token) for token in categories_list]
+
+    for id in catalog.keys():
+        found = False
+        word_list = catalog[id]['product_name'].lower().split(' ')
+        stemmed_words = [ps.stem(token) for token in word_list]
+
+
+        for i in range(len(stem_categories)):
+            if stem_categories[i] in stemmed_words:
+                categories[categories_list[i]].append(id)
+                found=True
+                break
+
+            elif 'bangl' in stemmed_words:
+                categories['bracelet'].append(id)
+                found=True
+                break
+
+            elif 'pendant' in stemmed_words:
+                categories['necklace'].append(id)
+                found=True
+                break
+
+        if not found:
+            categories['misc'].append(id)
+    return categories
 
 
 if __name__ == "__main__":
