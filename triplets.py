@@ -1,30 +1,41 @@
 
 from data_loader import *
+from nltk.stem import PorterStemmer
+ps = PorterStemmer()
 
-
-def sort_by_category(catalog, categories = {'ring': None, 'necklace': None, 'charm': None, 'earring': None, 'bracelet': None, 'misc': None}):
+def sort_by_category(catalog, categories = {'ring': [], 'necklace': [], 'charm': [], 'earring': [], 'bracelet': [], 'misc': []}):
     """
     :param catalog:
     :param categories: list of categories eg. ['ring', 'necklace']
     :return:
     """
-    not_found = []
+    categories_list = list(categories.keys())
+    stem_categories = [ps.stem(token) for token in categories_list]
 
-    for key in list(categories.keys())[:-1]:  # don't include misc category key
-        idx = []
-        for id in catalog.keys():
-            found = False
-            if key in catalog[id]['product_name'].lower().split(' '):
-                idx.append(id)
+    for id in catalog.keys():
+        found = False
+        word_list = catalog[id]['product_name'].lower().split(' ')
+        stemmed_words = [ps.stem(token) for token in word_list]
+
+
+        for i in range(len(stem_categories)):
+            if stem_categories[i] in stemmed_words:
+                categories[categories_list[i]].append(id)
                 found=True
+                break
 
-            if not found:
-                not_found.append(id)
+            elif 'bangl' in stemmed_words:
+                categories['bracelet'].append(id)
+                found=True
+                break
 
-        categories[key] = idx
+            elif 'pendant' in stemmed_words:
+                categories['necklace'].append(id)
+                found=True
+                break
 
-    categories['misc'] = not_found
-
+        if not found:
+            categories['misc'].append(id)
     return categories
 
 
@@ -34,5 +45,5 @@ def sort_by_category(catalog, categories = {'ring': None, 'necklace': None, 'cha
 
 # different categories
 catalog = dict_from_json()
-tester = sort_by_category(catalog=catalog)
+categories = sort_by_category(catalog=catalog)
 
