@@ -3,12 +3,14 @@ import json
 import urllib.request
 from tqdm import tqdm
 import glob
+import re
 import numpy as np
 from numpy import expand_dims
 from numpy.random import seed
 from keras.preprocessing.image import ImageDataGenerator, load_img, save_img, img_to_array, array_to_img
 from matplotlib import pyplot
 import random
+from image_scraping import file_from_json
 
 
 def data_retriever(directory_path, catalog):
@@ -68,7 +70,6 @@ def data_retriever(directory_path, catalog):
 
     #change back to the original directory:
     os.chdir(directory_path)
-
 
 
 
@@ -151,10 +152,7 @@ if __name__ == "__main__":
     random.seed(420)
     seed(420)
 
-    # open the product catalog:
-    a_file = open("catalog.json", "r")
-    catalog = json.loads(a_file.read())
-    a_file.close()
+    catalog = file_from_json("catalog.json")
 
     # download the product images from pandoras website:
     data_retriever(os.getcwd(), catalog)
