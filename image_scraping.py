@@ -5,15 +5,6 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 
-def file_from_json(path="catalog.json"):
-    # open the product catalog:
-    a_file = open(path, "r")
-    catalog = json.loads(a_file.read())
-    a_file.close()
-
-    return catalog
-
-
 def create_catalog(save=True):
     headers = {'User-Agent': 'Mozilla/5.0 CK={} (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
                "Connection": 'keep-alive'}

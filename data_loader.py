@@ -13,6 +13,14 @@ import random
 from image_scraping import file_from_json
 
 
+def dict_from_json(path="catalog.json"):
+    # open the product catalog:
+    a_file = open(path, "r")
+    catalog = json.loads(a_file.read())
+    a_file.close()
+    return catalog
+
+
 def data_retriever(directory_path, catalog):
     '''
     uses the 'product_image_url'-s from the catalog to download all the product images for every product in the catalog.
