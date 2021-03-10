@@ -10,7 +10,6 @@ from numpy.random import seed
 from keras.preprocessing.image import ImageDataGenerator, load_img, save_img, img_to_array, array_to_img
 from matplotlib import pyplot
 import random
-from image_scraping import file_from_json
 
 
 def dict_from_json(path="catalog.json"):
