@@ -175,6 +175,8 @@ if __name__ == "__main__":
     # augment the product images so that there are 40 images per product
     # - we want to do this for every subdirectory in the 'data' directory:
     for sub_dir in sub_dir_list:
+        if "." in sub_dir:
+            continue
         sub_dir_list.set_postfix_str('Creating a heck of a loads of images on your computer')
         path = os.path.join(data_dir, sub_dir)
         rotated_image_generator(path)

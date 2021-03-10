@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="a918adf5-f046-4013-83b0-0626a2c17b0c" name="Default Changelist" comment="Ændringer">
+    <list default="true" id="a918adf5-f046-4013-83b0-0626a2c17b0c" name="Default Changelist" comment="image resize ændringer">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data_loader.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_loader.py" afterDir="false" />
     </list>
@@ -74,7 +74,14 @@
       <option name="project" value="LOCAL" />
       <updated>1615373892111</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="image resize ændringer">
+      <created>1615387280738</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1615387280738</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -91,7 +98,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Ændringer" />
-    <option name="LAST_COMMIT_MESSAGE" value="Ændringer" />
+    <MESSAGE value="image resize ændringer" />
+    <option name="LAST_COMMIT_MESSAGE" value="image resize ændringer" />
   </component>
   <component name="XDebuggerManager">
     <watches-manager>
