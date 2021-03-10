@@ -1,6 +1,7 @@
 import os
 import json
 import urllib.request
+import requests
 from tqdm import tqdm
 import glob
 import re
@@ -10,7 +11,8 @@ from numpy.random import seed
 from keras.preprocessing.image import ImageDataGenerator, load_img, save_img, img_to_array, array_to_img
 from matplotlib import pyplot
 import random
-from image_scraping import file_from_json
+from PIL import Image
+#from image_scraping import file_from_json
 
 
 def dict_from_json(path="catalog.json"):
@@ -19,7 +21,6 @@ def dict_from_json(path="catalog.json"):
     catalog = json.loads(a_file.read())
     a_file.close()
     return catalog
-
 
 def data_retriever(directory_path, catalog):
     '''
@@ -64,7 +65,10 @@ def data_retriever(directory_path, catalog):
 
             for i in range(len(img_urls)):
                 try:
-                    urllib.request.urlretrieve(img_urls[i], "{}_{}.jpg".format(product, str(i).zfill(2)))
+                    im = Image.open(requests.get(img_urls[i], stream=True).raw)
+                    im_rs = im.resize((200,200))
+                    im_rs.save("{}_{}.jpg".format(product, str(i).zfill(2)))
+                    #urllib.request.urlretrieve(img_urls[i], "{}_{}.jpg".format(product, str(i).zfill(2)))
 
                 except:
                     text_file = open('../Not_found_imgs.txt', "a")
@@ -160,7 +164,7 @@ if __name__ == "__main__":
     random.seed(420)
     seed(420)
 
-    catalog = file_from_json("catalog.json")
+    catalog = dict_from_json("catalog.json")
 
     # download the product images from pandoras website:
     data_retriever(os.getcwd(), catalog)
