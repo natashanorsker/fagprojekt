@@ -6,7 +6,9 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-
+import os
+import scipy
+import cv2
 
 class Sampling(layers.Layer):
     """Uses (z_mean, z_log_var) to sample z, the vector encoding a digit."""
@@ -88,13 +90,28 @@ class VAE(keras.Model):
         }
 
 
-(x_train, _), (x_test, _) = keras.datasets.mnist.load_data()
-mnist_digits = np.concatenate([x_train, x_test], axis=0)
-mnist_digits = np.expand_dims(mnist_digits, -1).astype("float32") / 255
+#(x_train, _), (x_test, _) = keras.datasets.mnist.load_data()
+#mnist_digits = np.concatenate([x_train, x_test], axis=0)
+#mnist_digits = np.expand_dims(mnist_digits, -1).astype("float32") / 255
+
+folders = [folder for folder in os.listdir("data") if "." not in folder]
+
+N = sum(len(files) for _, _, files in os.walk("data"))
+
+images = np.zeros((N // 8, 200, 200, 3))
+
+for root, dirs, files in os.walk("data"):
+    for file in files:
+        if ".jpg" not in file:
+            continue
+
+        im = scipy.ndimage.imread(os.path.join(root, file))
+        pass
+
 
 vae = VAE(encoder, decoder)
 vae.compile(optimizer=keras.optimizers.Adam())
-vae.fit(mnist_digits, epochs=10, batch_size=128)
+vae.fit(images, epochs=10, batch_size=128)
 
 
 import matplotlib.pyplot as plt
