@@ -29,6 +29,12 @@ def category_from_id(id):
     return cat
 
 
+def get_positive_image_paths(image_name, product_id, num_pos_images):
+    image_dir = 'data\\'+str(product_id)
+    image_names = list_pictures(image_dir)
+
+    return image_names
+
 
 
 

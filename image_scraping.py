@@ -54,3 +54,6 @@ def create_catalog(save=True):
         a_file.close()
 
     return new_catalog
+
+if __name__ == "__main__":
+    new_catalog = create_catalog(save=True)
