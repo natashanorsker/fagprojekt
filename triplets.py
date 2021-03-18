@@ -4,6 +4,8 @@ import random
 from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
+import csv
+import math
 
 #https://github.com/USCDataScience/Image-Similarity-Deep-Ranking/blob/master/triplet_sampler.py
 def list_pictures(directory, ext='jpg|jpeg|bmp|png|ppm'):
@@ -23,19 +25,30 @@ def category_from_id(id):
 
     return category
 
-def show_triplet_pair(list_of_triplet_paths, save=False):
+def show_images(list_of_image_paths, ncols, plot_title=True, save=False):
+    n_imgs = len(list_of_image_paths)
+    nrows = math.ceil(n_imgs/ncols)
 
-    # create figure (fig), and array of axes (ax)
-    fig, ax = plt.subplots(nrows=1, ncols=3)
+    if n_imgs == 1:
+        img = Image.open(list_of_image_paths[0])
+        plt.imshow(img)
+        plt.title(list_of_image_paths[0].split('\\')[-1][:-4])
 
-    for i, axi in enumerate(ax.flat):
-        img = Image.open(list_of_triplet_paths[i])
-        axi.imshow(img, alpha=1)
-        # get indices of row/column
-        rowid = i // 3
-        colid = i % 3
+    else:
+
+        # create figure (fig), and array of axes (ax)
+        fig, ax = plt.subplots(nrows=nrows, ncols=ncols)
+
+        for i, axi in enumerate(ax.flat):
+            if i < n_imgs:
+                img = Image.open(list_of_image_paths[i])
+                title = list_of_image_paths[i].split('\\')[-1][:-4]
+                axi.imshow(img, alpha=1)
+                axi.set_title(title)
 
     plt.tight_layout(True)
+    if save:
+        plt.save('plotted_imgs.png')
     plt.show()
 
 
@@ -85,6 +98,7 @@ def get_negative_images(all_image_paths, positive_image_paths, num_neg_images=1)
             if neg_count > (int(num_neg_images) - 1):
                 break
     return negative_images
+
 
 def triplet_sampler(num_positive_imgs=1, num_negative_imgs=1, hard_negative_percentage = 0.5):
     '''
@@ -137,4 +151,10 @@ def triplet_sampler(num_positive_imgs=1, num_negative_imgs=1, hard_negative_perc
 
 if __name__ == "__main__":
     catalog = dict_from_json("catalog.json")
-    triplet_sampler()
+    #triplet_sampler()
+    with open('triplets.txt', newline='') as csvfile:
+        data = list(csv.reader(csvfile))
+
+    show_images(data[0]+data[1]+data[50], 3)
+
+
