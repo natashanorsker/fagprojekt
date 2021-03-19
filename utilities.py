@@ -24,12 +24,15 @@ def dict_from_json(path="catalog.json"):
     return catalog
 
 
-def category_from_id(id):
-    #should return the category in a string
-    pass
-    category = ''
+def info_from_id(id, name_of_info='item category', master_file_path='masterdata.csv'):
 
-    return category
+    #should return the category in a string
+    df = pd.read_csv(master_file_path, sep=';')
+    df.columns = df.columns.str.lower()
+    name_of_info = name_of_info.lower()
+
+    return df[name_of_info].loc[df.key == id].values[0]
+
 
 def sort_by_category(catalog):
     categories = {'ring': [], 'necklace': [], 'charm': [], 'earring': [], 'bracelet': [], 'misc': []}
