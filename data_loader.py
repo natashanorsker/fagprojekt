@@ -23,7 +23,6 @@ def dict_from_json(path="catalog.json"):
     a_file.close()
     return catalog
 
-
 def data_retriever(directory_path, catalog):
     '''
     uses the 'product_image_url'-s from the catalog to download all the product images for every product in the catalog.
