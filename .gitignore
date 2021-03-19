@@ -3,3 +3,4 @@ data/
 .vscode/
 __pycache__/
 *.pth
+/master_data.xlsx

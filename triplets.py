@@ -1,55 +1,10 @@
 
 from data_loader import *
 import random
-from PIL import Image
-import matplotlib.pyplot as plt
 import numpy as np
 import csv
-import math
+from utilities import *
 
-#https://github.com/USCDataScience/Image-Similarity-Deep-Ranking/blob/master/triplet_sampler.py
-def list_pictures(directory, ext='jpg|jpeg|bmp|png|ppm'):
-    '''
-    Returns path of folder/directory of every image present in directory by using simple regex expression
-    '''
-    return [os.path.join(root, f)
-            for root, _, files in os.walk(directory) for f in files
-            if re.match(r'([\w]+\.(?:' + ext + '))', f)]
-
-
-
-def category_from_id(id):
-    #should return the category in a string
-    pass
-    category = ''
-
-    return category
-
-def show_images(list_of_image_paths, ncols, plot_title=True, save=False):
-    n_imgs = len(list_of_image_paths)
-    nrows = math.ceil(n_imgs/ncols)
-
-    if n_imgs == 1:
-        img = Image.open(list_of_image_paths[0])
-        plt.imshow(img)
-        plt.title(list_of_image_paths[0].split('\\')[-1][:-4])
-
-    else:
-
-        # create figure (fig), and array of axes (ax)
-        fig, ax = plt.subplots(nrows=nrows, ncols=ncols)
-
-        for i, axi in enumerate(ax.flat):
-            if i < n_imgs:
-                img = Image.open(list_of_image_paths[i])
-                title = list_of_image_paths[i].split('\\')[-1][:-4]
-                axi.imshow(img, alpha=1)
-                axi.set_title(title)
-
-    plt.tight_layout(True)
-    if save:
-        plt.save('plotted_imgs.png')
-    plt.show()
 
 
 def get_positive_image_paths(image_path, all_positive_paths, num_pos_images=1):
@@ -155,6 +110,5 @@ if __name__ == "__main__":
     with open('triplets.txt', newline='') as csvfile:
         data = list(csv.reader(csvfile))
 
-    show_images(data[0]+data[1]+data[50], 3)
 
 
