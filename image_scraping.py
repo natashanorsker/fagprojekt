@@ -6,25 +6,7 @@ from tqdm import tqdm
 
 
 #websites: (these are the websites with the same format as UK)
-websites = ['https://us.pandora.net/en/jewelry/#position=top&src=categorySearch',
-            'https://au.pandora.net/en/jewellery/#position=top&src=categorySearch',
-            'https://cn.pandora.net/zh/jewellery/#position=top&src=categorySearch',
-            'https://hk.pandora.net/en/jewellery/#position=top&src=categorySearch',
-            'https://jp.pandora.net/ja/jewellery/#position=top&src=categorySearch',
-            'https://hk.pandora.net/en/jewellery/#position=top&src=categorySearch',
-            'https://nz.pandora.net/en/jewellery/#position=top&src=categorySearch',
-            'https://sg.pandora.net/en/jewellery/#position=top&src=categorySearch',
-            'https://dk.pandora.net/da/smykker/#position=top&src=categorySearch',
-            'https://de.pandora.net/de/schmuck/#position=top&src=categorySearch',
-            'https://fr.pandora.net/fr/bijoux/#position=top&src=categorySearch',
-            'https://it.pandora.net/it/gioielli/#position=top&src=categorySearch',
-            'https://uk.pandora.net/en/jewellery/#position=top&src=categorySearch',
-            'https://nl.pandora.net/nl/sieraden/#position=top&src=categorySearch',
-            'https://pl.pandora.net/pl/bizuteria/#position=top&src=categorySearch',
-            'https://se.pandora.net/sv/smycken/#position=top&src=categorySearch',
-            'https://at.pandora.net/de/schmuck/#position=top&src=categorySearch']
-
-websites_edited = ['https://us.pandora.net/en/jewelry/?start={}&amp;sz=36&amp;format=page-element',
+websites = ['https://us.pandora.net/en/jewelry/?start={}&amp;sz=36&amp;format=page-element',
             'https://au.pandora.net/en/jewellery/?start={}&amp;sz=36&amp;format=page-element',
             'https://cn.pandora.net/zh/jewellery/?start={}&amp;sz=36&amp;format=page-element',
             'https://hk.pandora.net/en/jewellery/?start={}&amp;sz=36&amp;format=page-element',

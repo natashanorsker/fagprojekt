@@ -5,7 +5,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 import math
-
+import pandas as pd
 
 #https://github.com/USCDataScience/Image-Similarity-Deep-Ranking/blob/master/triplet_sampler.py
 def list_pictures(directory, ext='jpg|jpeg|bmp|png|ppm'):
@@ -104,7 +104,7 @@ def show_images(list_of_image_paths, ncols, plot_title=True, save=False):
     plt.show()
 
 
-def occurrence_plot(catalog=catalog):
+def occurrence_plot(catalog):
     occurrences = np.zeros(42)
 
     for id in catalog.keys():
