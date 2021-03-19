@@ -7,17 +7,13 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import os
-import scipy
 import cv2
 from tqdm import tqdm
 from data_generator import DataGenerator
 from keras import backend as K
 
-# DEBUGGING
-from tensorflow.python.keras.utils.data_utils import Sequence
-from tensorflow.python.util import nest
-#from tensorflow.python.framework.ops import disable_eager_execution
-#disable_eager_execution()
+
+IMAGE_SIZE = 96
 
 
 class VAE(keras.Model):
@@ -52,7 +48,8 @@ class VAE(keras.Model):
                 )
             )
             kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
-            kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1)) * kl_multiplier
+            kl_loss *= kl_multiplier
+            kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
             total_loss = reconstruction_loss + kl_loss
         grads = tape.gradient(total_loss, self.trainable_weights)
         self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
@@ -78,11 +75,12 @@ class Sampling(layers.Layer):
 
 
 latent_dim = 8
-input_shape = (200, 200, 3)
+input_shape = (IMAGE_SIZE, IMAGE_SIZE, 3)
 
 encoder_inputs = keras.Input(shape=input_shape)
-x = layers.Conv2D(32, 3, activation="relu", strides=5, padding="same")(encoder_inputs)
-x = layers.Conv2D(64, 3, activation="relu", strides=4, padding="same")(x)
+x = layers.Conv2D(32, 3, activation="relu", strides=3, padding="same")(encoder_inputs)
+x = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")(x)
+x = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")(x)
 x = layers.Flatten()(x)
 x = layers.Dense(16, activation="relu")(x)
 z_mean = layers.Dense(latent_dim, name="z_mean")(x)
@@ -93,22 +91,15 @@ encoder.summary()
 
 
 latent_inputs = keras.Input(shape=(latent_dim,))
-x = layers.Dense(10 * 10 * 64, activation="relu")(latent_inputs)
-x = layers.Reshape((10, 10, 64))(x)
-x = layers.Conv2DTranspose(64, 3, activation="relu", strides=4, padding="same")(x)
-x = layers.Conv2DTranspose(32, 3, activation="relu", strides=5, padding="same")(x)
+x = layers.Dense(8 * 8 * 64, activation="relu")(latent_inputs)
+x = layers.Reshape((8, 8, 64))(x)
+x = layers.Conv2DTranspose(64, 3, activation="relu", strides=2, padding="same")(x)
+x = layers.Conv2DTranspose(32, 3, activation="relu", strides=2, padding="same")(x)
+x = layers.Conv2DTranspose(16, 3, activation="relu", strides=3, padding="same")(x)
 x = layers.Conv2DTranspose(3, 3, activation="sigmoid", padding="same")(x)
-decoder_outputs = layers.Reshape((200, 200, 3, 1))(x)
+decoder_outputs = layers.Reshape((IMAGE_SIZE, IMAGE_SIZE, 3, 1))(x)
 decoder = keras.Model(inputs=latent_inputs, outputs=decoder_outputs, name="decoder")
 decoder.summary()
-
-
-# Define the VAE loss.
-def vae_loss(x, x_decoded_mean):
-    """Defines the VAE loss functions as a combination of MSE and KL-divergence loss."""
-    mse_loss = K.mean(keras.losses.mse(x, x_decoded_mean), axis=(1, 2)) * 200 * 200
-    kl_loss = - 0.5 * K.mean(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
-    return mse_loss + kl_loss
 
 
 #(x_train, _), (x_test, _) = keras.datasets.mnist.load_data()
@@ -129,25 +120,25 @@ for root, dirs, files in walk:
 
 N = len(filenames)
 
-images = np.zeros((N // 4, 200, 200, 3, 1))
+#images = np.zeros((N // 2, IMAGE_SIZE, IMAGE_SIZE, 3, 1))
 
-tq = tqdm(enumerate(filenames[:N // 4]))
-for i, file in tq:
-    images[i] = cv2.imread(file).reshape((200, 200, 3, 1)) / 255
+#tq = tqdm(enumerate(filenames[:N//2]))
+#for i, file in tq:
+#    images[i] = cv2.imread(file).reshape((IMAGE_SIZE, IMAGE_SIZE, 3, 1)) / 255
 
-generator = DataGenerator(filenames[N//8:])
-val_generator = DataGenerator(filenames[:N//8])
+generator = DataGenerator(filenames)
+#val_generator = DataGenerator(filenames[:N//8])
 
 vae = VAE(encoder, decoder)
 vae.compile(optimizer=keras.optimizers.Adam())
 
-vae.fit(images, epochs=30, batch_size=128)
+#vae.fit(images, epochs=1, batch_size=128)
 
-#vae.fit_generator(generator=generator,
+vae.fit(generator,
 #                  validation_data=val_generator,
 #                  #use_multiprocessing=True,
 #                  #workers=6,
-#                  epochs=5)
+                  epochs=5)
 
 
 import matplotlib.pyplot as plt
@@ -155,7 +146,7 @@ import matplotlib.pyplot as plt
 
 def plot_latent_space(vae, n=15, figsize=15):
     # display a n*n 2D manifold of digits
-    digit_size = 200
+    digit_size = IMAGE_SIZE
     scale = 1.0
     figure = np.zeros((digit_size * n, digit_size * n, 3))
     # linearly spaced coordinates corresponding to the 2D plot
@@ -165,7 +156,7 @@ def plot_latent_space(vae, n=15, figsize=15):
 
     for i, yi in enumerate(grid_y):
         for j, xi in enumerate(grid_x):
-            z_sample = np.array([[xi, yi, 0, 0, 0, 0, 0, 0]])
+            z_sample = np.random.multivariate_normal(np.zeros(latent_dim), np.identity(latent_dim)*3).reshape((1, -1))
             x_decoded = vae.decoder.predict(z_sample)
             digit = x_decoded[0].reshape(digit_size, digit_size, 3)
             figure[
@@ -183,7 +174,7 @@ def plot_latent_space(vae, n=15, figsize=15):
     plt.yticks(pixel_range, sample_range_y)
     plt.xlabel("z[0]")
     plt.ylabel("z[1]")
-    plt.imshow(figure, cmap="Greys_r")
+    plt.imshow(figure)
     plt.show()
 
 

@@ -53,7 +53,7 @@ def data_retriever(directory_path, catalog):
 
     all_items = tqdm(catalog.items())
     for product, info in all_items:
-        all_items.set_postfix_str('Downloading a heck of a lot of images to your computer')
+        all_items.set_postfix_str(f'Downloading a heck of a lot of images to your computer ({product})')
         if product not in products_done.keys():
 
             new_dir = os.path.join(data_dir, product)
@@ -68,9 +68,8 @@ def data_retriever(directory_path, catalog):
             for i in range(len(img_urls)):
                 try:
                     im = Image.open(requests.get(img_urls[i], stream=True).raw)
-                    im_rs = im.resize((200, 200))
-                    im_rs.save("{}_{}_OG.jpg".format(product, str(i).zfill(2)))
-                    #urllib.request.urlretrieve(img_urls[i], "{}_{}.jpg".format(product, str(i).zfill(2)))
+                    im_rs = im.resize((96, 96))
+                    im_rs.save("{}_{}.jpg".format(product, str(i).zfill(2)))
 
                 except:
                     text_file = open('../Not_found_imgs.txt', "a")
@@ -159,8 +158,8 @@ def rotated_image_generator(directory_path, rotation_range = 180, total_images=4
             pyplot.show()
 
 
-def sort_by_category(catalog):
-    categories = {'ring': [], 'necklace': [], 'charm': [], 'earring': [], 'bracelet': [], 'misc': []}
+def sort_by_category(catalog, categories = {'ring': [], 'necklace': [], 'charm': [], 'earring': [], 'bracelet': [], 'misc': []}):
+
     categories_list = list(categories.keys())
     stem_categories = [ps.stem(token) for token in categories_list]
 
@@ -211,7 +210,7 @@ if __name__ == "__main__":
     for sub_dir in sub_dir_list:
         if "." in sub_dir:
             continue
-        sub_dir_list.set_postfix_str('Creating a heck of a loads of images on your computer')
+        sub_dir_list.set_postfix_str(f'Creating a heck of a loads of images on your computer ({sub_dir})')
         path = os.path.join(data_dir, sub_dir)
         rotated_image_generator(path)
 
