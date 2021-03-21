@@ -5,3 +5,4 @@ __pycache__/
 *.pth
 /master_data.xlsx
 /masterdata.csv
+*.ipynb_checkpoints
