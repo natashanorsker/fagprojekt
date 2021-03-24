@@ -5,9 +5,20 @@ This is a repository containing the project for the course
 
 at The Technical University of Denmark
 
-The data set is not stored in this repo but should be located like this
+# Necessary files
+The dataset is not stored in this repo but should be located like this. It will be downloaded with the relevant script.
 
 ```
 fagprojekt
 └───data
 ```
+
+Extra files which needs to be downloaded manually from our [drive](https://drive.google.com/file/d/1AaTLZmJ99lKCHlpNMhamrgmljf-4N1WJ/view?usp=sharing). Should be placed like so
+```
+fagprojekt
+└───detectron2segment
+      model_final.pth
+```
+# Dependencies
+
+# How to use
