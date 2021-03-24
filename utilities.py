@@ -7,6 +7,7 @@ import os
 import math
 import pandas as pd
 import json
+import re
 
 #https://github.com/USCDataScience/Image-Similarity-Deep-Ranking/blob/master/triplet_sampler.py
 def list_pictures(directory, ext='jpg|jpeg|bmp|png|ppm'):
@@ -36,14 +37,14 @@ def info_from_id(id, name_of_info='item category', master_file_path='masterdata.
         info = df[name_of_info].loc[df.key == id].values[0]
 
     except:
-        #print("Can't find info on product: {}".format(id))
+        print("Can't find info on product: {}".format(id))
         info = None
 
     return info
 
 
 
-def sort_by_category(catalog, category='item category', master_file_path='masterdata.csv', save=True):
+def sort_by_category(catalog, category='item sub-category', master_file_path='masterdata.csv', save=True):
     #read the master file:
     df = pd.read_csv(master_file_path, sep=';')
     df.columns = df.columns.str.lower()
@@ -61,10 +62,10 @@ def sort_by_category(catalog, category='item category', master_file_path='master
             categories[cat] += [product]
 
     #remove empty categories:
-    sorted = {key: value for key, value in categories.items() if value != None}
+    sorted = {key: value for key, value in categories.items() if len(value) != 0}
 
     if save:
-        a_file = open("catalog_by_category.json", "w")
+        a_file = open("catalog_by_subcategory.json", "w")
         json.dump(sorted, a_file)
         a_file.close()
 
@@ -128,5 +129,5 @@ def occurrence_plot(catalog):
 
 
 # delete later:
-catalog = dict_from_json()
-sorted = sort_by_category(catalog)
+#catalog = dict_from_json()
+#sorted = sort_by_category(catalog)
