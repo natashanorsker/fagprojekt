@@ -101,39 +101,37 @@ def quadlet_sampler(num_positive_imgs=1, num_negative_imgs=1, num_semi_imgs=1):
         for neg_id in negative_ids:
             negative_img_paths += list_pictures('data\\' + neg_id)
 
-        for subclass_ in subclasses.keys():
-            # positive image if it belongs to the same subclass and is in the class_ids:
-            positive_ids = list(set(class_ids).intersection(set(subclasses[subclass_])))
-            if len(positive_ids) > 0: #check if the subclass contains any of the item category ids
-                # semi image if it belongs to the same class, but not the same subclass:
-                semi_ids = list(set(class_ids)-set(positive_ids))
+        # positive image if it belongs to the same product:
+        # semi image if it belongs to the same class, but not the same product:
+        for id in catalog.keys():
+            # positive image if it belongs to the same product:
+            positive_ids = [id]
+            positive_img_paths = list_pictures('data\\' + id) #get all the images of the same product
+            
+            # semi image if it belongs to the same class, but not the same subclass:
+            semi_ids = list(set(class_ids)-set(positive_ids))
+            semi_img_paths = [] #get all the images belonging to the semi ids list
+            for sem_id in semi_ids:
+                semi_img_paths += list_pictures('data\\' + sem_id)
 
-                positive_img_paths = [] #get all the images in the positive ids list
-                semi_img_paths = [] #get all the images belonging to the semi ids list
+  
+            for query_img in positive_img_paths:
+                #all positive images to be paired with query image:
+                positive_images = get_images(query_img, positive_img_paths, num_positive_imgs)
 
-                for pos_id in positive_ids:
-                    positive_img_paths += list_pictures('data\\' + pos_id)
+                #for every positive image, find semi and negatives:
+                for pos_image in positive_images:
+                    #find a list of all possible semi ids: ie. all images, that are in the same item category, but aren't in the same subcategory:
+                    semi_images = get_images(query_img, semi_img_paths, num_semi_imgs)
 
-                for sem_id in semi_ids:
-                    semi_img_paths += list_pictures('data\\' + sem_id)
+                    for sem_image in semi_images:
+                        negative_images = get_images(query_img, negative_img_paths, num_semi_imgs)
 
-                for query_path in positive_img_paths:
-                    #all positive images to be paired with query image:
-                    positive_images = get_images(query_path, positive_img_paths, num_positive_imgs)
-
-                    #for every positive image, find semi and negatives:
-                    for pos_image in positive_images:
-                        #find a list of all possible semi ids: ie. all images, that are in the same item category, but aren't in the same subcategory:
-                        semi_images = get_images(query_path, semi_img_paths, num_semi_imgs)
-
-                        for sem_image in semi_images:
-                            negative_images = get_images(query_path, negative_img_paths, num_semi_imgs)
-
-                            for neg_image in negative_images:
-                                quadlets.append(query_path + ',')
-                                quadlets.append(pos_image + ',')
-                                quadlets.append(sem_image + ',')
-                                quadlets.append(neg_image + '\n')
+                        for neg_image in negative_images:
+                            quadlets.append(query_img + ',')
+                            quadlets.append(pos_image + ',')
+                            quadlets.append(sem_image + ',')
+                            quadlets.append(neg_image + '\n')
 
     #write to file
     f = open("quadlet_pairings.txt", 'w')

@@ -1,13 +1,14 @@
 from data_loader import*
 import seaborn as sns
 import matplotlib.pyplot as plt
-from PIL import Image
+from PIL import Image, ImageChops
 import matplotlib.pyplot as plt
 import os
 import math
 import pandas as pd
 import json
 import re
+import numpy as np
 
 #https://github.com/USCDataScience/Image-Similarity-Deep-Ranking/blob/master/triplet_sampler.py
 def list_pictures(directory, ext='jpg|jpeg|bmp|png|ppm'):
@@ -25,6 +26,16 @@ def dict_from_json(path="catalog.json"):
     a_file.close()
     return catalog
 
+def trim(im):
+    #from https://stackoverflow.com/questions/14211340/automatically-cropping-an-image-with-python-pil
+    bg = Image.new(im.mode, im.size, im.getpixel((0,0)))
+    diff = ImageChops.difference(im, bg)
+    diff = ImageChops.add(diff, diff, 2.0, -5)
+    #Bounding box given as a 4-tuple defining the left, upper, right, and lower pixel coordinates.
+    #If the image is completely empty, this method returns None.
+    bbox = diff.getbbox()
+    if bbox:
+        return im.crop(bbox)
 
 def info_from_id(id, name_of_info='item category', master_file_path='masterdata.csv'):
 
@@ -117,7 +128,7 @@ def occurrence_plot(catalog):
 
     for id in catalog.keys():
         images = list_pictures('data\\' + id)
-        images_no_au = [img for img in images if 'AU' not in img]
+        images_no_au = [img for img in images if 'AU' not in img[-7:]]
         occurrences[len(images_no_au)] += 1
 
     sns.set_style('whitegrid')
@@ -129,5 +140,6 @@ def occurrence_plot(catalog):
 
 
 # delete later:
-#catalog = dict_from_json()
+catalog = dict_from_json()
 #sorted = sort_by_category(catalog)
+#occurrence_plot(catalog)
