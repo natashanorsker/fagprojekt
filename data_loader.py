@@ -1,3 +1,4 @@
+from utilities import*
 import os
 import json
 import urllib.request
@@ -16,14 +17,10 @@ from nltk.stem import PorterStemmer
 ps = PorterStemmer()
 
 
-def dict_from_json(path="catalog.json"):
-    # open the product catalog:
-    a_file = open(path, "r")
-    catalog = json.loads(a_file.read())
-    a_file.close()
-    return catalog
 
 def data_retriever(directory_path, catalog):
+    headers = {'User-Agent': 'Mozilla/5.0 CK={} (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+               "Connection": 'keep-alive'}
     '''
     uses the 'product_image_url'-s from the catalog to download all the product images for every product in the catalog.
     Creates a main directory 'data' and subdirectories for every product to store the images.
@@ -201,6 +198,7 @@ if __name__ == "__main__":
     # download the product images from pandoras website:
     data_retriever(os.getcwd(), catalog)
 
+    '''
     data_dir = os.path.join(os.getcwd(), 'data')
     sub_dir_list = tqdm(os.listdir(data_dir))
 
@@ -212,4 +210,5 @@ if __name__ == "__main__":
         sub_dir_list.set_postfix_str(f'Creating a heck of a loads of images on your computer ({sub_dir})')
         path = os.path.join(data_dir, sub_dir)
         rotated_image_generator(path)
+    '''
 
