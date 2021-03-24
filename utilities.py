@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import os
 import math
 import pandas as pd
+import json
 
 #https://github.com/USCDataScience/Image-Similarity-Deep-Ranking/blob/master/triplet_sampler.py
 def list_pictures(directory, ext='jpg|jpeg|bmp|png|ppm'):
@@ -31,39 +32,43 @@ def info_from_id(id, name_of_info='item category', master_file_path='masterdata.
     df.columns = df.columns.str.lower()
     name_of_info = name_of_info.lower()
 
-    return df[name_of_info].loc[df.key == id].values[0]
+    try:
+        info = df[name_of_info].loc[df.key == id].values[0]
+
+    except:
+        #print("Can't find info on product: {}".format(id))
+        info = None
+
+    return info
 
 
-def sort_by_category(catalog):
-    categories = {'ring': [], 'necklace': [], 'charm': [], 'earring': [], 'bracelet': [], 'misc': []}
-    categories_list = list(categories.keys())
-    stem_categories = [ps.stem(token) for token in categories_list]
 
-    for id in catalog.keys():
-        found = False
-        word_list = catalog[id]['product_name'].lower().split(' ')
-        stemmed_words = [ps.stem(token) for token in word_list]
+def sort_by_category(catalog, category='item category', master_file_path='masterdata.csv', save=True):
+    #read the master file:
+    df = pd.read_csv(master_file_path, sep=';')
+    df.columns = df.columns.str.lower()
+    category = category.lower()
 
+    keys = df[category].unique()
+    categories = {k: [] for k in keys}
 
-        for i in range(len(stem_categories)):
-            if stem_categories[i] in stemmed_words:
-                categories[categories_list[i]].append(id)
-                found=True
-                break
+    for product in catalog.keys():
+        cat = info_from_id(product, name_of_info=category, master_file_path=master_file_path)
+        if cat is None:
+            pass
 
-            elif 'bangl' in stemmed_words:
-                categories['bracelet'].append(id)
-                found=True
-                break
+        else:
+            categories[cat] += [product]
 
-            elif 'pendant' in stemmed_words:
-                categories['necklace'].append(id)
-                found=True
-                break
+    #remove empty categories:
+    sorted = {key: value for key, value in categories.items() if value != None}
 
-        if not found:
-            categories['misc'].append(id)
-    return categories
+    if save:
+        a_file = open("catalog_by_category.json", "w")
+        json.dump(sorted, a_file)
+        a_file.close()
+
+    return sorted
 
 
 
@@ -73,7 +78,7 @@ def show_images(list_of_image_paths, ncols, plot_title=True, save=False):
     nrows = math.ceil(n_imgs/ncols)
 
     try:
-        list_of_image_paths[ncols]
+        list_of_image_paths[ncols-1]
     except IndexError:
         print('Error: ncols > len(images). There should be less columns than the amount of total images.')
         return
@@ -97,6 +102,8 @@ def show_images(list_of_image_paths, ncols, plot_title=True, save=False):
                 axi.imshow(img, alpha=1)
                 axi.axis('off')
                 axi.set_title(title)
+            else:
+                axi.axis('off')
 
     if save:
         plt.save('plotted_imgs.png')
@@ -118,3 +125,8 @@ def occurrence_plot(catalog):
     plt.ylabel('Number of products')
     plt.xticks(list(range(42))[::2])
     plt.show()
+
+
+# delete later:
+catalog = dict_from_json()
+sorted = sort_by_category(catalog)
