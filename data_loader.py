@@ -62,23 +62,25 @@ def data_retriever(directory_path, catalog):
         if product not in products_done.keys():
 
             new_dir = os.path.join(data_dir, product)
-            try:
-                os.chdir(new_dir)
-            except:
-                os.mkdir(new_dir)
-                os.chdir(new_dir)
-
             img_urls = info['product_image_url']
 
             for i in range(len(img_urls)):
                 try:
+                    s.get(img_urls[i], stream=True)
                     im = Image.open(s.get(img_urls[i], stream=True).raw)
                     mean_pixel = np.mean(img_to_array(im))
+
                     if mean_pixel < 200:
                         # save images with models on in another folder
-                        im.save(os.path.join(data_dir, "model_images\\{}_{}_OG.jpg".format(product, str(i).zfill(2))))
+                        im.save(os.path.join(os.path.join(data_dir, "model_images"), "{}_{}_OG.jpg".format(product, str(i).zfill(2))))
 
                     else:
+                        try:
+                            os.chdir(new_dir)
+                        except:
+                            os.mkdir(new_dir)
+                            os.chdir(new_dir)
+
                         im_cropped = trim(im)
                         # pad and resize images:
                         im_rs = ImageOps.pad(image=im_cropped, size=(96, 96), color=im.getpixel((0, 0)))
