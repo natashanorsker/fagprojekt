@@ -55,60 +55,97 @@ def get_negative_images(all_image_paths, positive_image_paths, num_neg_images=1)
     return negative_images
 
 
-def triplet_sampler(num_positive_imgs=1, num_negative_imgs=1, hard_negative_percentage = 0.5):
+
+def get_images(query_path, possible_image_paths, num_images=1):
+
+    random_numbers = np.arange(len(possible_image_paths))
+    np.random.shuffle(random_numbers)
+
+    if int(num_images) > (len(possible_image_paths) - 1):
+        num_pos_images = len(possible_image_paths) - 1
+
+    count = 0
+    sampled_images = []
+
+    for random_number in list(random_numbers):
+        if possible_image_paths[random_number] != query_path:
+            sampled_images.append(possible_image_paths[random_number])
+            count += 1
+            if int(count) > (int(num_images) - 1):
+                break
+    return sampled_images
+
+
+def quadlet_sampler(num_positive_imgs=1, num_negative_imgs=1, num_semi_imgs=1):
     '''
     Writes different combination of query, positive + negative images to a csvfile (writes the paths to the images)
     '''
 
     #get ids for the different classes [ring, earring, etc.]
-    classes = sort_by_category(catalog)
+    catalog = dict_from_json('catalog.json')
+    classes = dict_from_json('catalog_by_category.json') #catalog_by_category
+    subclasses = dict_from_json('catalog_by_subcategory.json')
 
+    #this is a list of the paths of all images we have:
     all_img_paths = []
-
     for id in catalog.keys():
-        all_img_paths += list_pictures('data\\'+ id)
+        all_img_paths += list_pictures('data\\' + id)
 
+    quadlets = []
+    #start with big category instead
+    for class_ in classes.keys():
+        class_ids = classes[class_]
+        negative_ids = list(catalog.keys() - set(class_ids)) #all ids that doesnt belong to class_ids
 
-    triplets = []
-    for class_ in tqdm(classes.keys()):
-        semi_negative_ids = classes[class_]
-        semi_negative_img_paths = []
-        for sem_neg_id in semi_negative_ids:
-            semi_negative_img_paths += list_pictures('data\\'+ sem_neg_id)
+        negative_img_paths = []
+        for neg_id in negative_ids:
+            negative_img_paths += list_pictures('data\\' + neg_id)
 
-        for product_id in semi_negative_ids:
-            #for all the images of the same product
-            image_names = list_pictures('data\\'+product_id)
-            for image_name in image_names:
-                query_image = image_name
-                positive_images = get_positive_image_paths(query_image, image_names, num_positive_imgs)
-                for positive_image in positive_images:
-                    #find if it should be hard or semi negative:
-                    if random.random() > hard_negative_percentage:
-                        #semi negative:
-                        negative_images = get_negative_images(all_img_paths, image_names, num_negative_imgs)
-                    else:
-                        #hard negative:
-                        negative_images = get_negative_images(all_img_paths, semi_negative_img_paths, num_negative_imgs)
-                    for negative_image in negative_images:
-                        triplets.append(query_image + ',')
-                        triplets.append(positive_image + ',')
-                        triplets.append(negative_image + '\n')
+        # positive image if it belongs to the same product:
+        # semi image if it belongs to the same class, but not the same product:
+        for id in catalog.keys():
+            # positive image if it belongs to the same product:
+            positive_ids = [id]
+            positive_img_paths = list_pictures('data\\' + id) #get all the images of the same product
+            
+            # semi image if it belongs to the same class, but not the same subclass:
+            semi_ids = list(set(class_ids)-set(positive_ids))
+            semi_img_paths = [] #get all the images belonging to the semi ids list
+            for sem_id in semi_ids:
+                semi_img_paths += list_pictures('data\\' + sem_id)
+
+  
+            for query_img in positive_img_paths:
+                #all positive images to be paired with query image:
+                positive_images = get_images(query_img, positive_img_paths, num_positive_imgs)
+
+                #for every positive image, find semi and negatives:
+                for pos_image in positive_images:
+                    #find a list of all possible semi ids: ie. all images, that are in the same item category, but aren't in the same subcategory:
+                    semi_images = get_images(query_img, semi_img_paths, num_semi_imgs)
+
+                    for sem_image in semi_images:
+                        negative_images = get_images(query_img, negative_img_paths, num_semi_imgs)
+
+                        for neg_image in negative_images:
+                            quadlets.append(query_img + ',')
+                            quadlets.append(pos_image + ',')
+                            quadlets.append(sem_image + ',')
+                            quadlets.append(neg_image + '\n')
 
     #write to file
-    f = open("triplet_pairings.txt", 'w')
-    f.write("".join(triplets))
+    f = open("quadlet_pairings.txt", 'w')
+    f.write("".join(quadlets))
     f.close()
-
-
-
 
 
 if __name__ == "__main__":
     catalog = dict_from_json("catalog.json")
-    #triplet_sampler()
-    with open('triplets.txt', newline='') as csvfile:
+    quadlet_sampler()
+
+    with open('quadlets.txt', newline='') as csvfile:
         data = list(csv.reader(csvfile))
+
 
 
 

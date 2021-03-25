@@ -12,7 +12,7 @@ from numpy.random import seed
 from keras.preprocessing.image import ImageDataGenerator, load_img, save_img, img_to_array, array_to_img
 from matplotlib import pyplot
 import random
-from PIL import Image
+from PIL import Image, ImageOps
 from nltk.stem import PorterStemmer
 ps = PorterStemmer()
 
@@ -37,6 +37,9 @@ def data_retriever(directory_path, catalog):
     except:
         os.mkdir(data_dir)
         os.chdir(data_dir)
+
+    if not os.path.exists('model_images'):
+        os.makedirs('model_images')
 
     # file that stores products already looked up
     if os.path.isfile('retrieved.txt'):
@@ -64,8 +67,16 @@ def data_retriever(directory_path, catalog):
             for i in range(len(img_urls)):
                 try:
                     im = Image.open(requests.get(img_urls[i], stream=True).raw)
-                    im_rs = im.resize((96, 96))
-                    im_rs.save("{}_{}.jpg".format(product, str(i).zfill(2)))
+                    mean_pixel = np.mean(img_to_array(im))
+                    if mean_pixel < 200:
+                        #save images with models on in another folder
+                        im.save("model_images/{}_{}_OG.jpg".format(product, str(i).zfill(2)))
+                        pass
+                    else:
+                        im_cropped = trim(im)
+                        #pad and resize images:
+                        im_rs = ImageOps.pad(image=im_cropped, size=(96,96), color=im.getpixel((0,0)))
+                        im_rs.save("{}_{}_OG.jpg".format(product, str(i).zfill(2)))
 
                 except:
                     text_file = open('../Not_found_imgs.txt', "a")
@@ -115,10 +126,9 @@ def rotated_image_generator(directory_path, rotation_range = 180, total_images=4
 
     assert len(imgs) > 0, 'Folder at {} contains no images! :('.format(directory_path)
 
-    product = imgs[0][:-7] #since the file is always saved as "productiD..._02.jpeg.."
+    product = imgs[0][:-10] #since the file is always saved as "productiD..._02_OG.jpeg.."
 
-    #imgs to array only contains catalog images that doesn't have a model in it (ie. the mean pixel value is over 200)
-    imgs_to_array = [img_to_array(load_img(x)) for x in imgs if np.mean(img_to_array(load_img(x))) > 200]
+    imgs_to_array = [img_to_array(load_img(x)) for x in imgs]
 
     assert len(imgs_to_array) > 0, 'No images to rotate! :('
 
@@ -198,7 +208,7 @@ if __name__ == "__main__":
     # download the product images from pandoras website:
     data_retriever(os.getcwd(), catalog)
 
-    '''
+
     data_dir = os.path.join(os.getcwd(), 'data')
     sub_dir_list = tqdm(os.listdir(data_dir))
 
@@ -210,5 +220,5 @@ if __name__ == "__main__":
         sub_dir_list.set_postfix_str(f'Creating a heck of a loads of images on your computer ({sub_dir})')
         path = os.path.join(data_dir, sub_dir)
         rotated_image_generator(path)
-    '''
+
 
