@@ -55,7 +55,7 @@ def info_from_id(id, name_of_info='item category', master_file_path='masterdata.
 
 
 
-def sort_by_category(catalog, category='item sub-category', master_file_path='masterdata.csv', save=True):
+def sort_by_category(catalog, category='item category', master_file_path='masterdata.csv', save=True):
     #read the master file:
     df = pd.read_csv(master_file_path, sep=';')
     df.columns = df.columns.str.lower()
@@ -63,10 +63,13 @@ def sort_by_category(catalog, category='item sub-category', master_file_path='ma
 
     keys = df[category].unique()
     categories = {k: [] for k in keys}
+    not_found_products = []
+
 
     for product in catalog.keys():
         cat = info_from_id(product, name_of_info=category, master_file_path=master_file_path)
         if cat is None:
+            not_found_products += [product]
             pass
 
         else:
@@ -76,11 +79,15 @@ def sort_by_category(catalog, category='item sub-category', master_file_path='ma
     sorted = {key: value for key, value in categories.items() if len(value) != 0}
 
     if save:
-        a_file = open("catalog_by_subcategory.json", "w")
+        a_file = open("catalog_by_category.json", "w")
         json.dump(sorted, a_file)
         a_file.close()
 
-    return sorted
+        another_file = open("id_not_in_masterfile.csv", "w")
+        json.dump(not_found_products, another_file)
+        another_file.close()
+
+    return sorted, not_found_products
 
 
 
@@ -139,7 +146,9 @@ def occurrence_plot(catalog):
     plt.show()
 
 
-# delete later:
 catalog = dict_from_json()
-#sorted = sort_by_category(catalog)
-#occurrence_plot(catalog)
+
+if __name__ == "__main__":
+    #sorted, not_found = sort_by_category(catalog)
+    occurrence_plot(catalog)
+    pass

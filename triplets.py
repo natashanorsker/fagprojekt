@@ -84,7 +84,6 @@ def quadlet_sampler(num_positive_imgs=1, num_negative_imgs=1, num_semi_imgs=1):
     #get ids for the different classes [ring, earring, etc.]
     catalog = dict_from_json('catalog.json')
     classes = dict_from_json('catalog_by_category.json') #catalog_by_category
-    subclasses = dict_from_json('catalog_by_subcategory.json')
 
     #this is a list of the paths of all images we have:
     all_img_paths = []

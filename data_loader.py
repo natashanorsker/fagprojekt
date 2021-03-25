@@ -1,14 +1,13 @@
 from utilities import*
 import os
 import json
-import urllib.request
 import requests
 from tqdm import tqdm
 import glob
-import re
 import numpy as np
 from numpy import expand_dims
 from numpy.random import seed
+import PIL
 from keras.preprocessing.image import ImageDataGenerator, load_img, save_img, img_to_array, array_to_img
 from matplotlib import pyplot
 import random
@@ -70,15 +69,19 @@ def data_retriever(directory_path, catalog):
                     mean_pixel = np.mean(img_to_array(im))
                     if mean_pixel < 200:
                         #save images with models on in another folder
-                        im.save("model_images/{}_{}_OG.jpg".format(product, str(i).zfill(2)))
-                        pass
+                        im.save(os.path.join(data_dir, "model_images\\{}_{}_OG.jpg".format(product, str(i).zfill(2))))
+
                     else:
                         im_cropped = trim(im)
                         #pad and resize images:
                         im_rs = ImageOps.pad(image=im_cropped, size=(96,96), color=im.getpixel((0,0)))
                         im_rs.save("{}_{}_OG.jpg".format(product, str(i).zfill(2)))
 
-                except:
+
+                except requests.ConnectionError:
+                    raise Exception('No internet connected. Try running the script when you have access to the internet.')
+
+                except PIL.UnidentifiedImageError:
                     text_file = open('../Not_found_imgs.txt', "a")
                     text_file.write("Product: {},  URL:  {} \n".format(product, img_urls[i]))
                     text_file.close()
@@ -97,7 +100,7 @@ def rotated_image_generator(directory_path, rotation_range = 180, total_images=4
         width_shift_range=0.1,
         height_shift_range=0.1,
         shear_range=0,
-        zoom_range=0.1,
+        zoom_range=0,
         horizontal_flip=True,
         fill_mode='nearest', save=True, show=False):
     '''
