@@ -1,4 +1,4 @@
-from utilities import*
+from utilities import *
 import os
 import json
 import requests
@@ -13,13 +13,15 @@ from matplotlib import pyplot
 import random
 from PIL import Image, ImageOps
 from nltk.stem import PorterStemmer
+
 ps = PorterStemmer()
 
+headers = ['Mozilla/5.0 CK={} (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
+           'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148']
 
 
 def data_retriever(directory_path, catalog):
-    headers = {'User-Agent': 'Mozilla/5.0 CK={} (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
-               "Connection": 'keep-alive'}
     '''
     uses the 'product_image_url'-s from the catalog to download all the product images for every product in the catalog.
     Creates a main directory 'data' and subdirectories for every product to store the images.
@@ -27,6 +29,11 @@ def data_retriever(directory_path, catalog):
     :param catalog: The catalog of all the products (can be found on github or can be created by running the image_scraper.py file)
     :return: directories with product images
     '''
+
+    s = requests.Session()
+    s.headers['User-Agent'] = random.choice(headers)
+    s.headers['Connection'] = 'keep-alive'
+    s.max_redirects = 200
 
     # Parent Directory path (make a DATA directory for storing the data)
     data_dir = os.path.join(directory_path, 'data')
@@ -65,21 +72,22 @@ def data_retriever(directory_path, catalog):
 
             for i in range(len(img_urls)):
                 try:
-                    im = Image.open(requests.get(img_urls[i], stream=True).raw)
+                    im = Image.open(s.get(img_urls[i], stream=True).raw)
                     mean_pixel = np.mean(img_to_array(im))
                     if mean_pixel < 200:
-                        #save images with models on in another folder
+                        # save images with models on in another folder
                         im.save(os.path.join(data_dir, "model_images\\{}_{}_OG.jpg".format(product, str(i).zfill(2))))
 
                     else:
                         im_cropped = trim(im)
-                        #pad and resize images:
-                        im_rs = ImageOps.pad(image=im_cropped, size=(96,96), color=im.getpixel((0,0)))
+                        # pad and resize images:
+                        im_rs = ImageOps.pad(image=im_cropped, size=(96, 96), color=im.getpixel((0, 0)))
                         im_rs.save("{}_{}_OG.jpg".format(product, str(i).zfill(2)))
 
 
                 except requests.ConnectionError:
-                    raise Exception('No internet connected. Try running the script when you have access to the internet.')
+                    raise Exception(
+                        'No internet connected. Try running the script when you have access to the internet.')
 
                 except PIL.UnidentifiedImageError:
                     text_file = open('../Not_found_imgs.txt', "a")
@@ -91,18 +99,17 @@ def data_retriever(directory_path, catalog):
             with open("../retrieved.txt", "w") as f:
                 json.dump(products_done, f)
 
-    #change back to the original directory:
+    # change back to the original directory:
     os.chdir(directory_path)
 
 
-
-def rotated_image_generator(directory_path, rotation_range = 180, total_images=40,
-        width_shift_range=0.1,
-        height_shift_range=0.1,
-        shear_range=0,
-        zoom_range=0,
-        horizontal_flip=True,
-        fill_mode='nearest', save=True, show=False):
+def rotated_image_generator(directory_path, rotation_range=180, total_images=40,
+                            width_shift_range=0.1,
+                            height_shift_range=0.1,
+                            shear_range=0,
+                            zoom_range=0,
+                            horizontal_flip=True,
+                            fill_mode='nearest', save=True, show=False):
     '''
     :param directory_path: (str) the directory where the images are stored (should be the subdirectories in the 'data' directory)
     :param rotation_range: (int) the range of the image rotation (between 0-360 degrees)
@@ -121,7 +128,7 @@ def rotated_image_generator(directory_path, rotation_range = 180, total_images=4
 
     # get list of all jpg image files in directory
     imgs = glob.glob("*.jpg")
-    #figure out what to call the new images (ie product_07.jpg)
+    # figure out what to call the new images (ie product_07.jpg)
     name_suffix = len(imgs)
 
     if name_suffix >= 40:
@@ -129,7 +136,7 @@ def rotated_image_generator(directory_path, rotation_range = 180, total_images=4
 
     assert len(imgs) > 0, 'Folder at {} contains no images! :('.format(directory_path)
 
-    product = imgs[0][:-10] #since the file is always saved as "productiD..._02_OG.jpeg.."
+    product = imgs[0][:-10]  # since the file is always saved as "productiD..._02_OG.jpeg.."
 
     imgs_to_array = [img_to_array(load_img(x)) for x in imgs]
 
@@ -137,12 +144,12 @@ def rotated_image_generator(directory_path, rotation_range = 180, total_images=4
 
     # ImageDataGenerator rotation
     datagen = ImageDataGenerator(rotation_range=rotation_range,
-        width_shift_range=width_shift_range,
-        height_shift_range=height_shift_range,
-        shear_range=shear_range,
-        zoom_range=zoom_range,
-        horizontal_flip=horizontal_flip,
-        fill_mode=fill_mode)
+                                 width_shift_range=width_shift_range,
+                                 height_shift_range=height_shift_range,
+                                 shear_range=shear_range,
+                                 zoom_range=zoom_range,
+                                 horizontal_flip=horizontal_flip,
+                                 fill_mode=fill_mode)
 
     for i in range(len(imgs_to_array), total_images):  # we want 40 images per product
         # choose at random from images:
@@ -167,8 +174,8 @@ def rotated_image_generator(directory_path, rotation_range = 180, total_images=4
             pyplot.show()
 
 
-def sort_by_category(catalog, categories = {'ring': [], 'necklace': [], 'charm': [], 'earring': [], 'bracelet': [], 'misc': []}):
-
+def sort_by_category(catalog,
+                     categories={'ring': [], 'necklace': [], 'charm': [], 'earring': [], 'bracelet': [], 'misc': []}):
     categories_list = list(categories.keys())
     stem_categories = [ps.stem(token) for token in categories_list]
 
@@ -177,21 +184,20 @@ def sort_by_category(catalog, categories = {'ring': [], 'necklace': [], 'charm':
         word_list = catalog[id]['product_name'].lower().split(' ')
         stemmed_words = [ps.stem(token) for token in word_list]
 
-
         for i in range(len(stem_categories)):
             if stem_categories[i] in stemmed_words:
                 categories[categories_list[i]].append(id)
-                found=True
+                found = True
                 break
 
             elif 'bangl' in stemmed_words:
                 categories['bracelet'].append(id)
-                found=True
+                found = True
                 break
 
             elif 'pendant' in stemmed_words:
                 categories['necklace'].append(id)
-                found=True
+                found = True
                 break
 
         if not found:
@@ -211,7 +217,6 @@ if __name__ == "__main__":
     # download the product images from pandoras website:
     data_retriever(os.getcwd(), catalog)
 
-
     data_dir = os.path.join(os.getcwd(), 'data')
     sub_dir_list = tqdm(os.listdir(data_dir))
 
@@ -223,5 +228,3 @@ if __name__ == "__main__":
         sub_dir_list.set_postfix_str(f'Creating a heck of a loads of images on your computer ({sub_dir})')
         path = os.path.join(data_dir, sub_dir)
         rotated_image_generator(path)
-
-
