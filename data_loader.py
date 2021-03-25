@@ -33,7 +33,7 @@ def data_retriever(directory_path, catalog):
     s = requests.Session()
     s.headers['User-Agent'] = random.choice(headers)
     s.headers['Connection'] = 'keep-alive'
-    s.max_redirects = 200
+    s.max_redirects = 30
 
     # Parent Directory path (make a DATA directory for storing the data)
     data_dir = os.path.join(directory_path, 'data')
@@ -136,44 +136,45 @@ def rotated_image_generator(directory_path, rotation_range=180, total_images=40,
     if name_suffix >= 40:
         return
 
-    assert len(imgs) > 0, 'Folder at {} contains no images! :('.format(directory_path)
+    if len(imgs)==0:
+        'Folder at {} contains no images! :('.format(directory_path)
 
-    product = imgs[0][:-10]  # since the file is always saved as "productiD..._02_OG.jpeg.."
+    else:
 
-    imgs_to_array = [img_to_array(load_img(x)) for x in imgs]
+        product = imgs[0][:-10]  # since the file is always saved as "productiD..._02_OG.jpeg.."
 
-    assert len(imgs_to_array) > 0, 'No images to rotate! :('
+        imgs_to_array = [img_to_array(load_img(x)) for x in imgs]
 
-    # ImageDataGenerator rotation
-    datagen = ImageDataGenerator(rotation_range=rotation_range,
-                                 width_shift_range=width_shift_range,
-                                 height_shift_range=height_shift_range,
-                                 shear_range=shear_range,
-                                 zoom_range=zoom_range,
-                                 horizontal_flip=horizontal_flip,
-                                 fill_mode=fill_mode)
+        # ImageDataGenerator rotation
+        datagen = ImageDataGenerator(rotation_range=rotation_range,
+                                     width_shift_range=width_shift_range,
+                                     height_shift_range=height_shift_range,
+                                     shear_range=shear_range,
+                                     zoom_range=zoom_range,
+                                     horizontal_flip=horizontal_flip,
+                                     fill_mode=fill_mode)
 
-    for i in range(len(imgs_to_array), total_images):  # we want 40 images per product
-        # choose at random from images:
-        data = random.choice(imgs_to_array)
-        # specify name of image to save as
-        img_name = product + '_' + str(name_suffix).zfill(2) + '_AU.jpg'
+        for i in range(len(imgs_to_array), total_images):  # we want 40 images per product
+            # choose at random from images:
+            data = random.choice(imgs_to_array)
+            # specify name of image to save as
+            img_name = product + '_' + str(name_suffix).zfill(2) + '_AU.jpg'
 
-        # iterator
-        aug_iter = datagen.flow(expand_dims(data, 0), batch_size=1)
+            # iterator
+            aug_iter = datagen.flow(expand_dims(data, 0), batch_size=1)
 
-        # generate batch of images
-        image = next(aug_iter)[0].astype('uint8')
+            # generate batch of images
+            image = next(aug_iter)[0].astype('uint8')
 
-        name_suffix += 1
+            name_suffix += 1
 
-        if save:
-            save_img(img_name, image)
+            if save:
+                save_img(img_name, image)
 
-        if show:
-            # plot raw pixel data
-            pyplot.imshow(image)
-            pyplot.show()
+            if show:
+                # plot raw pixel data
+                pyplot.imshow(image)
+                pyplot.show()
 
 
 if __name__ == "__main__":
