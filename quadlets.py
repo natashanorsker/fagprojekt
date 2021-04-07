@@ -6,14 +6,14 @@ import csv
 from utilities import *
 
 
-
+'''
 def get_positive_image_paths(image_path, all_positive_paths, num_pos_images=1):
     #https://github.com/USCDataScience/Image-Similarity-Deep-Ranking/blob/master/triplet_sampler.py
-    '''
+    
     image_path (str): path to the image (eg. 'data\\799367C00\\799367C00_02.jpg')
     all_image_paths (list): list of paths to images of same product as image_path (eg. ['data\\799367C00\\799367C00_02.jpg', 'data\\799367C00\\799367C00_03.jpg']..)
     num_pos_images (int): number of positive imagepaths to return (returns 1 if unspecified)
-    '''
+    
 
     random_numbers = np.arange(len(all_positive_paths))
     np.random.shuffle(random_numbers)
@@ -53,7 +53,7 @@ def get_negative_images(all_image_paths, positive_image_paths, num_neg_images=1)
             if neg_count > (int(num_neg_images) - 1):
                 break
     return negative_images
-
+'''
 
 
 def get_images(query_path, possible_image_paths, num_images=1):

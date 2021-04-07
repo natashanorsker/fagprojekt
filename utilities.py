@@ -132,7 +132,7 @@ def occurrence_plot(catalog):
     occurrences = np.zeros(42)
 
     for id in catalog.keys():
-        images = list_pictures('data\\' + id)
+        images = list_pictures(os.path.join("data", id))
         images_no_au = [img for img in images if 'AU' not in img[-7:]]
         occurrences[len(images_no_au)] += 1
 
@@ -147,6 +147,6 @@ def occurrence_plot(catalog):
 catalog = dict_from_json()
 
 if __name__ == "__main__":
-    sorted, not_found = sort_by_category(catalog)
+    #sorted, not_found = sort_by_category(catalog)
     occurrence_plot(catalog)
     pass
