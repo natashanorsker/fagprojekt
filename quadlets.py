@@ -26,7 +26,7 @@ def get_images(query_path, possible_image_paths, num_images=1):
     return sampled_images
 
 
-def quadlet_sampler(num_positive_imgs=1, num_negative_imgs=1, num_semi_imgs=1):
+def quadlet_sampler(num_positive_imgs=1000, num_negative_imgs=1000, num_semi_imgs=1000):
     '''
     Writes different combination of query, positive + negative images to a csvfile (writes the paths to the images)
     '''
@@ -36,7 +36,6 @@ def quadlet_sampler(num_positive_imgs=1, num_negative_imgs=1, num_semi_imgs=1):
     classes = dict_from_json('catalog_by_category.json') #catalog_by_category
     has_no_class = dict_from_json('id_not_in_masterfile.json')
 
-    quadlets = []
     #start with big category instead
     for class_ in tqdm(classes.keys()):
         class_ids = classes[class_]
@@ -49,6 +48,7 @@ def quadlet_sampler(num_positive_imgs=1, num_negative_imgs=1, num_semi_imgs=1):
         # positive image if it belongs to the same product:
         # semi image if it belongs to the same class, but not the same product:
         for id in class_ids:
+            quadlets = []
             # positive image if it belongs to the same product:
             positive_ids = [id]
             positive_img_paths = list_pictures(os.path.join("data", id)) #get all the images of the same product
@@ -78,17 +78,17 @@ def quadlet_sampler(num_positive_imgs=1, num_negative_imgs=1, num_semi_imgs=1):
                             quadlets.append(sem_image + ',')
                             quadlets.append(neg_image + '\n')
 
-    #write to file
-    f = open("quadlet_pairings.txt", 'w')
-    f.write("".join(quadlets))
-    f.close()
+            #write to file
+            f = open("quadlet_pairings.txt", 'w')
+            f.write("".join(quadlets))
+            f.close()
 
 
 if __name__ == "__main__":
     catalog = dict_from_json("catalog.json")
     quadlet_sampler()
 
-    with open('quadlet_pairings.txt', newline='') as csvfile:
+    with open('quadlet_pairings_giga.txt', newline='') as csvfile:
         data = list(csv.reader(csvfile))
 
 
