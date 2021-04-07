@@ -36,7 +36,7 @@ def data_retriever(directory_path, catalog):
     s.max_redirects = 30
 
     # Parent Directory path (make a DATA directory for storing the data)
-    data_dir = os.path.join(directory_path, 'data')
+    data_dir = os.path.join(directory_path, '../data')
 
     try:
         os.chdir(data_dir)
@@ -184,12 +184,12 @@ if __name__ == "__main__":
     random.seed(420)
     seed(420)
 
-    catalog = dict_from_json("catalog.json")
+    catalog = dict_from_json("../catalog.json")
 
     # download the product images from pandoras website:
     data_retriever(os.getcwd(), catalog)
 
-    data_dir = os.path.join(os.getcwd(), 'data')
+    data_dir = os.path.join(os.getcwd(), '../data')
     sub_dir_list = tqdm(os.listdir(data_dir))
 
     # augment the product images so that there are 40 images per product

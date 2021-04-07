@@ -6,13 +6,9 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
 import os
-import cv2
 from tqdm import tqdm
-from data_generator import DataGenerator
-from keras import backend as K
-
+from autoencoder.data_generator import DataGenerator
 
 IMAGE_SIZE = 96
 LATENT_DIM = 32
@@ -151,7 +147,7 @@ input_shape = (IMAGE_SIZE, IMAGE_SIZE, 3)
 
 filenames = []
 
-walk = tqdm(os.walk("data"))
+walk = tqdm(os.walk("../data"))
 for root, dirs, files in walk:
     for file in files:
         if ".jpg" in file:

@@ -1,6 +1,5 @@
-from data_loader import*
+from data_code.data_loader import*
 import seaborn as sns
-import matplotlib.pyplot as plt
 from PIL import Image, ImageChops
 import matplotlib.pyplot as plt
 import os

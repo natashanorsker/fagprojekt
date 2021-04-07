@@ -1,7 +1,5 @@
 
-from data_loader import *
-import random
-import numpy as np
+from data_code.data_loader import *
 import csv
 from utilities import *
 
@@ -26,38 +24,38 @@ def get_images(query_path, possible_image_paths, num_images=1):
     return sampled_images
 
 
-def quadlet_sampler(num_positive_imgs=1000, num_negative_imgs=1000, num_semi_imgs=1000):
+def quadlet_sampler(num_positive_imgs=2, num_negative_imgs=2, num_semi_imgs=2):
     '''
     Writes different combination of query, positive + negative images to a csvfile (writes the paths to the images)
     '''
 
     #get ids for the different classes [ring, earring, etc.]
-    catalog = dict_from_json('catalog.json')
-    classes = dict_from_json('catalog_by_category.json') #catalog_by_category
-    has_no_class = dict_from_json('id_not_in_masterfile.json')
+    catalog = dict_from_json('../catalog.json')
+    classes = dict_from_json('../catalog_by_category.json') #catalog_by_category
+    has_no_class = dict_from_json('../id_not_in_masterfile.json')
 
     #start with big category instead
-    for class_ in tqdm(classes.keys()):
+    for class_ in classes.keys():
         class_ids = classes[class_]
         negative_ids = list(set(catalog.keys()) - set(class_ids + has_no_class)) #all ids that doesnt belong to this class and don't include the ones that doesn't have a class
 
         negative_img_paths = []
         for neg_id in negative_ids:
-            negative_img_paths += list_pictures(os.path.join("data", neg_id))
+            negative_img_paths += list_pictures(os.path.join("../data", neg_id))
 
         # positive image if it belongs to the same product:
         # semi image if it belongs to the same class, but not the same product:
-        for id in class_ids:
+        for id in tqdm(class_ids):
             quadlets = []
             # positive image if it belongs to the same product:
             positive_ids = [id]
-            positive_img_paths = list_pictures(os.path.join("data", id)) #get all the images of the same product
+            positive_img_paths = list_pictures(os.path.join("../data", id)) #get all the images of the same product
             
             # semi image if it belongs to the same class, but not the same subclass:
             semi_ids = list(set(class_ids)-set(positive_ids))
             semi_img_paths = [] #get all the images belonging to the semi ids list
             for sem_id in semi_ids:
-                semi_img_paths += list_pictures(os.path.join("data", sem_id))
+                semi_img_paths += list_pictures(os.path.join("../data", sem_id))
 
   
             for query_img in positive_img_paths:
@@ -79,13 +77,13 @@ def quadlet_sampler(num_positive_imgs=1000, num_negative_imgs=1000, num_semi_img
                             quadlets.append(neg_image + '\n')
 
             #write to file
-            f = open("quadlet_pairings.txt", 'w')
+            f = open("quadlet_pairings_giga.txt", 'a+')
             f.write("".join(quadlets))
             f.close()
 
 
 if __name__ == "__main__":
-    catalog = dict_from_json("catalog.json")
+    catalog = dict_from_json("../catalog.json")
     quadlet_sampler()
 
     with open('quadlet_pairings_giga.txt', newline='') as csvfile:
