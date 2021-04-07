@@ -30,7 +30,7 @@ def trim(im):
     #from https://stackoverflow.com/questions/14211340/automatically-cropping-an-image-with-python-pil
     bg = Image.new(im.mode, im.size, im.getpixel((0,0)))
     diff = ImageChops.difference(im, bg)
-    diff = ImageChops.add(diff, diff, 2.0, -5)
+    diff = ImageChops.add(diff, diff, 2.0, 0)
     #Bounding box given as a 4-tuple defining the left, upper, right, and lower pixel coordinates.
     #If the image is completely empty, this method returns None.
     bbox = diff.getbbox()
@@ -83,7 +83,7 @@ def sort_by_category(catalog, category='item category', master_file_path='master
         json.dump(sorted, a_file)
         a_file.close()
 
-        another_file = open("id_not_in_masterfile.csv", "w")
+        another_file = open("id_not_in_masterfile.json", "w")
         json.dump(not_found_products, another_file)
         another_file.close()
 
@@ -115,14 +115,12 @@ def show_images(list_of_image_paths, ncols, plot_title=True, save=False):
 
 
         for i, axi in enumerate(ax.flat):
-            if i < n_imgs:
+            if i <= n_imgs-1:
                 img = Image.open(list_of_image_paths[i])
                 title = list_of_image_paths[i].split('\\')[-1][:-4]
                 axi.imshow(img, alpha=1)
                 axi.axis('off')
                 axi.set_title(title)
-            else:
-                axi.axis('off')
 
     if save:
         plt.save('plotted_imgs.png')
@@ -149,6 +147,6 @@ def occurrence_plot(catalog):
 catalog = dict_from_json()
 
 if __name__ == "__main__":
-    #sorted, not_found = sort_by_category(catalog)
+    sorted, not_found = sort_by_category(catalog)
     occurrence_plot(catalog)
     pass

@@ -84,17 +84,13 @@ def quadlet_sampler(num_positive_imgs=1, num_negative_imgs=1, num_semi_imgs=1):
     #get ids for the different classes [ring, earring, etc.]
     catalog = dict_from_json('catalog.json')
     classes = dict_from_json('catalog_by_category.json') #catalog_by_category
-
-    #this is a list of the paths of all images we have:
-    all_img_paths = []
-    for id in catalog.keys():
-        all_img_paths += list_pictures('data\\' + id)
+    has_no_class = dict_from_json('id_not_in_masterfile.json')
 
     quadlets = []
     #start with big category instead
-    for class_ in classes.keys():
+    for class_ in tqdm(classes.keys()):
         class_ids = classes[class_]
-        negative_ids = list(catalog.keys() - set(class_ids)) #all ids that doesnt belong to class_ids
+        negative_ids = list(set(catalog.keys()) - set(class_ids + has_no_class)) #all ids that doesnt belong to this class and don't include the ones that doesn't have a class
 
         negative_img_paths = []
         for neg_id in negative_ids:
@@ -102,7 +98,7 @@ def quadlet_sampler(num_positive_imgs=1, num_negative_imgs=1, num_semi_imgs=1):
 
         # positive image if it belongs to the same product:
         # semi image if it belongs to the same class, but not the same product:
-        for id in catalog.keys():
+        for id in class_ids:
             # positive image if it belongs to the same product:
             positive_ids = [id]
             positive_img_paths = list_pictures('data\\' + id) #get all the images of the same product
@@ -142,7 +138,7 @@ if __name__ == "__main__":
     catalog = dict_from_json("catalog.json")
     quadlet_sampler()
 
-    with open('quadlets.txt', newline='') as csvfile:
+    with open('quadlet_pairings.txt', newline='') as csvfile:
         data = list(csv.reader(csvfile))
 
 

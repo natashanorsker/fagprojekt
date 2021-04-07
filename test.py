@@ -1,4 +1,4 @@
-from triplets import list_pictures
+from quadlets import list_pictures
 from data_loader import*
 import seaborn as sns
 import matplotlib.pyplot as plt
