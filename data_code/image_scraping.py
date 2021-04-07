@@ -90,7 +90,7 @@ def create_catalog(websites, save=True):
 
 
         if save:
-            a_file = open("catalog.json", "w")
+            a_file = open("../catalog.json", "w")
             json.dump(new_catalog, a_file)
             a_file.close()
 
