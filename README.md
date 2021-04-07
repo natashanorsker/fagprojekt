@@ -22,3 +22,11 @@ fagprojekt
 # Dependencies
 
 # How to use
+
+# Experiements
+
+The following outlines the scripts you need to run to reproduce the results in the report
+
+| **Script** | **Figure** |
+|--------|--------|
+|       |        |
