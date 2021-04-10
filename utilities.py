@@ -143,9 +143,8 @@ def occurrence_plot(catalog):
     plt.show()
 
 
-catalog = dict_from_json()
-
 if __name__ == "__main__":
+    catalog = dict_from_json()
     #sorted, not_found = sort_by_category(catalog)
     occurrence_plot(catalog)
     pass
