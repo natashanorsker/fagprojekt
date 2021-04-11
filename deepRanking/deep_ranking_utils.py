@@ -23,7 +23,6 @@ def semihard_negative(loss_values, margin):
     return np.random.choice(semihard_negatives) if len(semihard_negatives) > 0 else None
 
 
-
 class EmbeddingNet(nn.Module):
     # https://github.com/adambielski/siamese-triplet/blob/master/networks.py
     def __init__(self):
@@ -49,8 +48,6 @@ class EmbeddingNet(nn.Module):
 
     def get_embedding(self, x):
         return self.forward(x)
-
-
 
 
 class TripletNet(nn.Module):
@@ -222,4 +219,7 @@ def test_epoch(val_loader, model, loss_fn, cuda, metrics):
                 metric(outputs, target, loss_outputs)
 
     return val_loss, metrics
+
+
+
 
