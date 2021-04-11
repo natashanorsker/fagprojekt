@@ -48,9 +48,11 @@ class Dataset(torch.utils.data.Dataset):
         ID = self.list_IDs[index]
 
         # Load data and get label
-        image = Image.open(ID).convert('RGB')
+        image = Image.open(ID)
         X = TF.to_tensor(image)
         y = self.labels[index]
+        if X.size()[0] != 3:
+            raise ValueError('Image: {} is not a RGB image'.format(ID))
         return X, y
 
 
@@ -87,7 +89,7 @@ class TripletDataset(Dataset):
 
     def __getitem__(self, index):
         if self.train:
-            load_img1 = Image.open(self.data[index]).convert('RGB')
+            load_img1 = Image.open(self.data[index])
             img1 = TF.to_tensor(load_img1)
             label1 = self.labels[index].item()
             positive_index = index
@@ -96,18 +98,39 @@ class TripletDataset(Dataset):
             negative_label = np.random.choice(list(self.labels_set - set([label1])))
             negative_index = np.random.choice(self.label_to_indices[negative_label])
 
-            load_img2 = Image.open(self.data[positive_index]).convert('RGB')
+            load_img2 = Image.open(self.data[positive_index])
             img2 = TF.to_tensor(load_img2)
 
-            load_img3 = Image.open(self.data[negative_index]).convert('RGB')
+            load_img3 = Image.open(self.data[negative_index])
             img3 = TF.to_tensor(load_img3)
+
+            if not all(len(img) == 3 for img in [img1, img2, img3]):
+                load_img1 = Image.open(self.data[index]).convert('RGB')
+                img1 = TF.to_tensor(load_img1)
+
+                load_img2 = Image.open(self.data[positive_index]).convert('RGB')
+                img2 = TF.to_tensor(load_img2)
+
+                load_img3 = Image.open(self.data[negative_index]).convert('RGB')
+                img3 = TF.to_tensor(load_img3)
+
+
+
         else:
-            load_img1 = Image.open(self.data[self.test_triplets[index][0]]).convert('RGB')
+            load_img1 = Image.open(self.data[self.test_triplets[index][0]])
             img1 = TF.to_tensor(load_img1)
-            load_img2 = Image.open(self.data[self.test_triplets[index][1]]).convert('RGB')
+            load_img2 = Image.open(self.data[self.test_triplets[index][1]])
             img2 = TF.to_tensor(load_img2)
-            load_img3 = Image.open(self.data[self.test_triplets[index][2]]).convert('RGB')
+            load_img3 = Image.open(self.data[self.test_triplets[index][2]])
             img3 = TF.to_tensor(load_img3)
+
+            if not all(len(img) == 3 for img in [img1, img2, img3]):
+                load_img1 = Image.open(self.data[self.test_triplets[index][0]]).convert('RGB')
+                img1 = TF.to_tensor(load_img1)
+                load_img2 = Image.open(self.data[self.test_triplets[index][1]]).convert('RGB')
+                img2 = TF.to_tensor(load_img2)
+                load_img3 = Image.open(self.data[self.test_triplets[index][2]]).convert('RGB')
+                img3 = TF.to_tensor(load_img3)
 
 
         return (img1, img2, img3), []
@@ -134,10 +157,10 @@ def make_dataset(test_size=0.13, random_state=42):
     #get partition of train and testset:
     X_train, X_test, y_train, y_test = train_test_split(all_img_paths, labels, test_size=test_size, random_state=random_state)
 
-    X_train = X_train[:500]
-    X_test = X_test[:250]
-    y_train = y_train[:500]
-    y_test = y_test[:250]
+    X_train = X_train[60000:]
+    X_test = X_test[5000:]
+    y_train = y_train[60000:]
+    y_test = y_test[5000:]
 
     #make 'generic' dataset
     training_set = Dataset(X_train, y_train)

@@ -84,7 +84,7 @@ def data_retriever(directory_path, catalog):
                         im_cropped = trim(im)
                         # pad and resize images:
                         im_rs = ImageOps.pad(image=im_cropped, size=(96, 96), color=im.getpixel((0, 0)))
-                        im_rs.save("{}_{}_OG.jpg".format(product, str(i).zfill(2)))
+                        im_rs.save("{}_{}_OG.jpg".format(product, str(i).zfill(2)), 'RGB')
 
 
                 except requests.ConnectionError:

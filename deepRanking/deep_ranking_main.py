@@ -21,8 +21,8 @@ torch.backends.cudnn.benchmark = True
 triplet_train, triplet_test, label_encoder = make_dataset()
 
 #make the dataloaders:
-triplet_train_loader = torch.utils.data.DataLoader(triplet_train, batch_size=25, shuffle=True)
-triplet_test_loader = torch.utils.data.DataLoader(triplet_test, batch_size=25, shuffle=False)
+triplet_train_loader = torch.utils.data.DataLoader(triplet_train, batch_size=500, shuffle=True)
+triplet_test_loader = torch.utils.data.DataLoader(triplet_test, batch_size=500, shuffle=False)
 
 margin = 1.
 embedding_net = EmbeddingNet()
@@ -30,10 +30,10 @@ model = TripletNet(embedding_net)
 if cuda:
     model.cuda()
 loss_fn = TripletLoss(margin)
-lr = 1e-3
+lr = 1e-1
 optimizer = optim.Adam(model.parameters(), lr=lr)
 scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
-n_epochs = 2
+n_epochs = 1
 log_interval = 100
 
 

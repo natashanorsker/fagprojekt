@@ -3,6 +3,9 @@ import torch.nn.functional as F
 from itertools import combinations
 import numpy as np
 import torch
+import matplotlib
+import matplotlib.pyplot as plt
+
 
 # utility functions
 def pdist(vectors):
@@ -10,17 +13,47 @@ def pdist(vectors):
         dim=1).view(-1, 1)
     return distance_matrix
 
+
 def hardest_negative(loss_values):
     hard_negative = np.argmax(loss_values)
     return hard_negative if loss_values[hard_negative] > 0 else None
+
 
 def random_hard_negative(loss_values):
     hard_negatives = np.where(loss_values > 0)[0]
     return np.random.choice(hard_negatives) if len(hard_negatives) > 0 else None
 
+
 def semihard_negative(loss_values, margin):
     semihard_negatives = np.where(np.logical_and(loss_values < margin, loss_values > 0))[0]
     return np.random.choice(semihard_negatives) if len(semihard_negatives) > 0 else None
+
+
+def plot_embeddings(embeddings, targets, xlim=None, ylim=None):
+    plt.figure(figsize=(10, 10))
+    for i in range(10):
+        inds = np.where(targets == i)[0]
+        plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5, color=colors[i])
+    if xlim:
+        plt.xlim(xlim[0], xlim[1])
+    if ylim:
+        plt.ylim(ylim[0], ylim[1])
+    plt.legend(mnist_classes)
+
+
+def extract_embeddings(dataloader, model):
+    with torch.no_grad():
+        model.eval()
+        embeddings = np.zeros((len(dataloader.dataset), 2))
+        labels = np.zeros(len(dataloader.dataset))
+        k = 0
+        for images, target in dataloader:
+            if cuda:
+                images = images.cuda()
+            embeddings[k:k + len(images)] = model.get_embedding(images).data.cpu().numpy()
+            labels[k:k + len(images)] = target.numpy()
+            k += len(images)
+    return embeddings, labels
 
 
 class EmbeddingNet(nn.Module):
@@ -82,7 +115,6 @@ class TripletLoss(nn.Module):
         return losses.mean() if size_average else losses.sum()
 
 
-
 class QuadletNet(nn.Module):
     def __init__(self, embedding_net):
         super(TripletNet, self).__init__()
@@ -97,7 +129,6 @@ class QuadletNet(nn.Module):
 
     def get_embedding(self, x):
         return self.embedding_net(x)
-
 
 
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
@@ -143,6 +174,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
     total_loss = 0
 
     for batch_idx, (data, target) in enumerate(train_loader):
+        print('Batch [{}/{}]'.format(batch_idx, len(train_loader)))
         target = target if len(target) > 0 else None
         if not type(data) in (tuple, list):
             data = (data,)
@@ -150,7 +182,6 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
             data = tuple(d.cuda() for d in data)
             if target is not None:
                 target = target.cuda()
-
 
         optimizer.zero_grad()
         outputs = model(*data)
@@ -219,7 +250,3 @@ def test_epoch(val_loader, model, loss_fn, cuda, metrics):
                 metric(outputs, target, loss_outputs)
 
     return val_loss, metrics
-
-
-
-
