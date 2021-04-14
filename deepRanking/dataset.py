@@ -19,14 +19,6 @@ import warnings
 random.seed(42)
 seed(42)
 
-def show_image(img_path):
-    img = Image.open(img_path)
-    img.show()
-#show_image('../data/589338C00/589338C00_05_OG.jpg')
-
-def get_list_IDs():
-    pass
-
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, list_IDs, labels):
@@ -52,7 +44,8 @@ class Dataset(torch.utils.data.Dataset):
         X = TF.to_tensor(image)
         y = self.labels[index]
         if X.size()[0] != 3:
-            raise ValueError('Image: {} is not a RGB image'.format(ID))
+            image = Image.open(ID).convert('RGB')
+            X = TF.to_tensor(image)
         return X, y
 
 
@@ -87,15 +80,17 @@ class TripletDataset(Dataset):
                         for i in range(len(self.data))]
             self.test_triplets = triplets
 
+
     def __getitem__(self, index):
+
         if self.train:
             load_img1 = Image.open(self.data[index])
             img1 = TF.to_tensor(load_img1)
-            label1 = self.labels[index].item()
+            anchor_label = self.labels[index].item()
             positive_index = index
             while positive_index == index:
-                positive_index = np.random.choice(self.label_to_indices[label1])
-            negative_label = np.random.choice(list(self.labels_set - set([label1])))
+                positive_index = np.random.choice(self.label_to_indices[anchor_label])
+            negative_label = np.random.choice(list(self.labels_set - set([anchor_label])))
             negative_index = np.random.choice(self.label_to_indices[negative_label])
 
             load_img2 = Image.open(self.data[positive_index])
@@ -113,8 +108,6 @@ class TripletDataset(Dataset):
 
                 load_img3 = Image.open(self.data[negative_index]).convert('RGB')
                 img3 = TF.to_tensor(load_img3)
-
-
 
         else:
             load_img1 = Image.open(self.data[self.test_triplets[index][0]])
@@ -154,23 +147,23 @@ def make_dataset(test_size=0.13, random_state=42):
     label_encoder = preprocessing.LabelEncoder()
     labels = label_encoder.fit_transform(all_img_labels)
 
+    #husk at slette:
+    #TODO: slet!
+    #all_img_paths = all_img_paths[::8]
+    #labels = labels[::8]
+
     #get partition of train and testset:
     X_train, X_test, y_train, y_test = train_test_split(all_img_paths, labels, test_size=test_size, random_state=random_state)
-
-    X_train = X_train[60000:]
-    X_test = X_test[5000:]
-    y_train = y_train[60000:]
-    y_test = y_test[5000:]
 
     #make 'generic' dataset
     training_set = Dataset(X_train, y_train)
     validation_set = Dataset(X_test, y_test)
 
     #make triplet dataset
-    triplet_train_set = TripletDataset(training_set, train=True)
-    triplet_test_set = TripletDataset(validation_set, train=False)
+    #triplet_train_set = TripletDataset(training_set, train=True)
+    #triplet_test_set = TripletDataset(validation_set, train=False)
 
-    return triplet_train_set, triplet_test_set, label_encoder
+    return training_set, validation_set, label_encoder
 
 
 

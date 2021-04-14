@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import matplotlib
 import matplotlib.pyplot as plt
+cuda = torch.cuda.is_available()
 
 
 # utility functions
@@ -31,14 +32,13 @@ def semihard_negative(loss_values, margin):
 
 def plot_embeddings(embeddings, targets, xlim=None, ylim=None):
     plt.figure(figsize=(10, 10))
-    for i in range(10):
+    for i in targets:
         inds = np.where(targets == i)[0]
-        plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5, color=colors[i])
+        plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5)
     if xlim:
         plt.xlim(xlim[0], xlim[1])
     if ylim:
         plt.ylim(ylim[0], ylim[1])
-    plt.legend(mnist_classes)
 
 
 def extract_embeddings(dataloader, model):
