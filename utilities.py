@@ -36,19 +36,21 @@ def trim(im):
     if bbox:
         return im.crop(bbox)
 
-def info_from_id(id, name_of_info='item category', master_file_path='masterdata.csv'):
+def info_from_id(id, master_file_path='masterdata.csv'):
 
     #should return the category in a string
     df = pd.read_csv(master_file_path, sep=';')
     df.columns = df.columns.str.lower()
-    name_of_info = name_of_info.lower()
 
     try:
-        info = df[name_of_info].loc[df.key == id].values[0]
+        info = df['item category'].loc[df.key == id].values[0]
+
+        if info not in ['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings']:
+            info = 'Misc'
 
     except:
         print("Can't find info on product: {}".format(id))
-        info = None
+        info = 'Set'
 
     return info
 

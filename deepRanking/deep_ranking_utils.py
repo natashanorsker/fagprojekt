@@ -6,7 +6,9 @@ import torch
 import matplotlib
 import matplotlib.pyplot as plt
 cuda = torch.cuda.is_available()
+import matplotlib.cm as cm
 from dataset import list_paths_labels
+from utilities import  info_from_id
 
 
 # utility functions
@@ -15,21 +17,26 @@ def pdist(vectors):
         dim=1).view(-1, 1)
     return distance_matrix
 
-def plot_embeddings(embeddings, targets, colors, label_encoder, xlim=None, ylim=None):
+def plot_embeddings(embeddings, targets, label_encoder, xlim=None, ylim=None):
     plt.figure(figsize=(10, 10))
+    colors = cm.rainbow(np.linspace(0, 1, len(set(targets))))
+    markers = {'Bracelets': '*', 'Charms':'.', 'Jewellery spare parts': 'x', 'Necklaces & Pendants': '3', 'Rings': 's', 'Earrings': 'D', 'Misc': 'p', 'Set': '+'}
     col_num = 0
+    targets = label_encoder.inverse_transform(targets)
     for i in set(targets):
+        category = info_from_id(i, master_file_path='../data_code/masterdata.csv')
         inds = np.where(targets == i)[0]
-        plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5, color = colors[col_num])
+        plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5, color = colors[col_num], marker = markers[category])
         col_num+=1
     if xlim:
         plt.xlim(xlim[0], xlim[1])
     if ylim:
         plt.ylim(ylim[0], ylim[1])
-    targets = label_encoder.inverse_transform(targets)
-    plt.legend(list(set(targets)))
-    plt.show()
+    #targets = label_encoder.inverse_transform(targets)
+    plt.legend(list(set(targets)), loc='best')
     plt.savefig('plot.png')
+    plt.show()
+
 
 
 def extract_embeddings(dataloader, model):
@@ -44,29 +51,8 @@ def extract_embeddings(dataloader, model):
             embeddings[k:k + len(images)] = model.get_embedding(images).data.cpu().numpy()
             labels[k:k + len(images)] = target.numpy()
             k += len(images)
+        labels = labels.astype(int)
     return embeddings, labels
-
-
-"""
-def get_embeddings(dataset, model, n_labels):
-
-    labels = dataset.labels
-    labels_set = list(set(labels))
-    label_to_indices = {label: np.where(labels == label)[0] for label in labels_set}
-
-    classes = np.random.choice(labels_set, n_labels, replace=False)
-
-    embeddings = []
-    labels = []
-
-    for class_ in classes:
-        indices = label_to_indices[class_]
-        #img = dataset[1163][0]
-        embeddings += [model.get_embedding(dataset[idx][0]) for idx in indices]
-        labels += [class_]*len(indices)
-
-    return embeddings, labels
-"""
 
 
 class EmbeddingNet(nn.Module):
