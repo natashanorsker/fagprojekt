@@ -1,10 +1,10 @@
 from dataset import BalancedBatchSampler, make_dataset
-from deep_ranking_utils import EmbeddingNet,OnlineTripletLoss, AllTripletSelector, HardestNegativeTripletSelector, SemihardNegativeTripletSelector, RandomNegativeTripletSelector, AverageNonzeroTripletsMetric, fit
-from deep_ranking_utils import extract_embeddings, plot_embeddings
+from nets import EmbeddingNet
+from losses import OnlineTripletLoss
+from deep_ranking_utils import AllTripletSelector, HardestNegativeTripletSelector, SemihardNegativeTripletSelector, RandomNegativeTripletSelector, AverageNonzeroTripletsMetric, fit
 from torch.optim import lr_scheduler
 import torch.optim as optim
 import torch
-from torch.autograd import Variable
 cuda = torch.cuda.is_available()
 
 #make the 'normal' datasets:
@@ -14,7 +14,6 @@ train_dataset, test_dataset, label_encoder = make_dataset()
 train_batch_sampler = BalancedBatchSampler(train_dataset, n_classes=10, n_samples=25)
 test_batch_sampler = BalancedBatchSampler(test_dataset, n_classes=10, n_samples=25)
 
-#
 #make the dataloaders:
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=500, shuffle=True)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=500, shuffle=False)
@@ -36,6 +35,7 @@ scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
 n_epochs = 1
 log_interval = 150
 
+#fit the model
 fit(online_train_loader, online_test_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[AverageNonzeroTripletsMetric()])
 
 #save model:
@@ -47,5 +47,5 @@ the_model.load_state_dict(torch.load('online_model.pth'))
 
 #train_embeddings_otl, train_labels_otl = extract_embeddings(train_loader, model)
 #plot_embeddings(train_embeddings_otl, train_labels_otl)
-val_embeddings_otl, val_labels_otl = extract_embeddings(test_loader, model)
-plot_embeddings(val_embeddings_otl, val_labels_otl)
+#val_embeddings_otl, val_labels_otl = extract_embeddings(test_loader, model)
+#plot_embeddings(val_embeddings_otl, val_labels_otl)
