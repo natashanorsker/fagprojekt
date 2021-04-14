@@ -2,193 +2,185 @@
     https://keras.io/examples/generative/vae/
     https://www.tensorflow.org/guide/keras/custom_layers_and_models
 """
-
-import numpy as np
-import tensorflow as tf
-from tensorflow import keras
 import os
-from tqdm import tqdm
-from autoencoder.data_generator import DataGenerator
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from random import shuffle
+from contextlib import redirect_stdout
+import datetime
 
-IMAGE_SIZE = 96
-LATENT_DIM = 32
+from keras import backend as K
+from keras.layers import Input, Dense, Conv2D, Conv2DTranspose, Flatten, Lambda, Reshape
+from keras.models import Model
+from keras.losses import binary_crossentropy
+from data_generator import DataGenerator
 
-from tensorflow.keras import layers
+tf.compat.v1.disable_eager_execution()
+tf.executing_eagerly()
 
+# Seed for reproducability
+np.random.seed(25)
 
-class Sampling(layers.Layer):
-    """Uses (z_mean, z_log_var) to sample z, the vector encoding a digit."""
+# Training parameters
+latent_dim = 32  # Dimension of the latent space
+batch_size = 2**10  # Batch size for the data generator
+epochs = 10  # Epochs to train the model for
 
-    def call(self, inputs):
-        z_mean, z_log_var = inputs
-        batch = tf.shape(z_mean)[0]
-        dim = tf.shape(z_mean)[1]
-        epsilon = tf.keras.backend.random_normal(shape=(batch, dim))
-        return z_mean + tf.exp(0.5 * z_log_var) * epsilon
+logfile_name = "vae_log_" + str(datetime.datetime.now())
 
+def compute_latent(x):
+    """
+    Samples points from the latent space given a distribution.
 
-class Encoder(layers.Layer):
-    """Maps MNIST digits to a triplet (z_mean, z_log_var, z)."""
+    Args:
+        x: List of the form [mu, sigma], containing the mean and the
+           log-variance of the latent space distribution as Keras tensors.
+    Returns:
+        Keras tensor containing the sampled point.
 
-    def __init__(self, latent_dim=LATENT_DIM, intermediate_dim=64, name="encoder", **kwargs):
-        super(Encoder, self).__init__(name=name, **kwargs)
-        self.conv1 = layers.Conv2D(32, 3, activation="relu", strides=3, padding="same")
-        self.conv2 = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")
-        self.conv3 = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")
-        self.flatten = layers.Flatten()
-        self.dense = layers.Dense(intermediate_dim, activation="relu")
-
-        self.z_mean = layers.Dense(latent_dim, name="z_mean")
-        self.z_log_var = layers.Dense(latent_dim, name="z_log_var")
-
-        self.sampling = Sampling()
-
-
-    def call(self, inputs):
-        x = self.conv1(inputs)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.flatten(x)
-        x = self.dense(x)
-
-        z_mean = self.z_mean(x)
-        z_log_var = self.z_log_var(x)
-        z = self.sampling((z_mean, z_log_var))
-        return z_mean, z_log_var, z
+    """
+    _mu, _sigma = x
+    batch = K.shape(_mu)[0]
+    dim = K.shape(_mu)[1]
+    # generate random noise
+    eps = K.random_normal(shape=(batch, dim))
+    # exp(sigma/2) converts log-variance to standard deviation
+    return _mu + K.exp(_sigma / 2) * eps
 
 
-class Decoder(layers.Layer):
-    """Converts z, the encoded digit vector, back into a readable digit."""
+def kl_reconstruction_loss(true, predicted):
+    """
+        Samples points from the latent space given a distribution.
 
-    def __init__(self, original_dim, intermediate_dim=64, name="decoder", **kwargs):
-        super(Decoder, self).__init__(name=name, **kwargs)
-        #self.dense_proj = layers.Dense(intermediate_dim, activation="relu")
-        #self.dense_output = layers.Dense(original_dim, activation="sigmoid")
+        Args:
+            true: Input to the model. 96x96x3 image.
+            predicted: Output of the model. 96x96x3 image.
+        Returns:
+            Loss computed as the mean of the reconstruction loss and the Kullback-Leibner loss.
 
-        self.dense = layers.Dense(8 * 8 * 64, activation="relu")
-        self.reshape = layers.Reshape((8, 8, 64))
-        self.conv_trans1 = layers.Conv2DTranspose(64, 3, activation="relu", strides=2, padding="same")
-        self.conv_trans2 = layers.Conv2DTranspose(32, 3, activation="relu", strides=2, padding="same")
-        self.conv_trans3 = layers.Conv2DTranspose(16, 3, activation="relu", strides=3, padding="same")
-        self.conv_trans4 = layers.Conv2DTranspose(3, 3, activation="sigmoid", padding="same")
-        self.reshape2 = layers.Reshape((IMAGE_SIZE, IMAGE_SIZE, 3, 1))
+    """
+    # Reconstruction loss (binary crossentropy)
+    reconstruction_loss = binary_crossentropy(K.flatten(true), K.flatten(predicted)) * img_width * img_height
 
-    def call(self, inputs):
-        x = self.dense(inputs)
-        x = self.reshape(x)
-        x = self.conv_trans1(x)
-        x = self.conv_trans2(x)
-        x = self.conv_trans3(x)
-        x = self.conv_trans4(x)
-        return self.reshape2(x)
+    # KL divergence loss
+    kl_loss = 1 + sigma - K.square(mu) - K.exp(sigma)
+    kl_loss = K.sum(kl_loss, axis=-1)
+    kl_loss *= -0.5
+    # Total loss = 50% rec + 50% KL divergence loss
+    return K.mean(reconstruction_loss + kl_loss)
 
 
-class VariationalAutoEncoder(keras.Model):
-    """Combines the encoder and decoder into an end-to-end model for training."""
+# A function to display image sequence
+def display_image_sequence(start, end, no_of_images):
 
-    def __init__(
-        self,
-        original_dim,
-        intermediate_dim=64,
-        latent_dim=32,
-        name="autoencoder",
-        **kwargs
-    ):
-        super(VariationalAutoEncoder, self).__init__(name=name, **kwargs)
-        self.original_dim = original_dim
-        self.encoder = Encoder(latent_dim=latent_dim, intermediate_dim=intermediate_dim)
-        self.decoder = Decoder(original_dim, intermediate_dim=intermediate_dim)
+    new_points = np.linspace(start, end, no_of_images)
+    new_images = decoder.predict(new_points)
 
-    def call(self, inputs):
-        z_mean, z_log_var, z = self.encoder(inputs)
-        reconstructed = self.decoder(z)
-        # Add KL divergence regularization loss.
-        kl_loss = -0.5 * tf.reduce_mean(
-            z_log_var - tf.square(z_mean) - tf.exp(z_log_var) + 1
-        )
-        self.add_loss(kl_loss)
-        return reconstructed
+    # Display some images
+    fig, axes = plt.subplots(ncols=no_of_images, sharex="none", sharey="all", figsize=(20, 7))
 
-latent_dim = 32
-input_shape = (IMAGE_SIZE, IMAGE_SIZE, 3)
-
-# encoder_inputs = keras.Input(shape=input_shape)
-# x = layers.Conv2D(32, 3, activation="relu", strides=3, padding="same")(encoder_inputs)
-# x = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")(x)
-# x = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")(x)
-# x = layers.Flatten()(x)
-# x = layers.Dense(16, activation="relu")(x)
-# z_mean = layers.Dense(latent_dim, name="z_mean")(x)
-# z_log_var = layers.Dense(latent_dim, name="z_log_var")(x)
-# z = Sampling()([z_mean, z_log_var])
-# encoder = keras.Model(inputs=encoder_inputs, outputs=[z_mean, z_log_var, z], name="encoder")
-# encoder.summary()
+    for i in range(no_of_images):
+        axes[i].imshow(new_images[i])
+        axes[i].get_xaxis().set_visible(False)
+        axes[i].get_yaxis().set_visible(False)
+    plt.show()
 
 
-#latent_inputs = keras.Input(shape=(latent_dim,))
-#x = layers.Dense(8 * 8 * 64, activation="relu")(latent_inputs)
-#x = layers.Reshape((8, 8, 64))(x)
-#x = layers.Conv2DTranspose(64, 3, activation="relu", strides=2, padding="same")(x)
-#x = layers.Conv2DTranspose(32, 3, activation="relu", strides=2, padding="same")(x)
-#x = layers.Conv2DTranspose(16, 3, activation="relu", strides=3, padding="same")(x)
-#x = layers.Conv2DTranspose(3, 3, activation="sigmoid", padding="same")(x)
-#decoder_outputs = layers.Reshape((IMAGE_SIZE, IMAGE_SIZE, 3, 1))(x)
-#decoder = keras.Model(inputs=latent_inputs, outputs=decoder_outputs, name="decoder")
-#decoder.summary()
+# Input size
+img_height = 96
+img_width = 96
+num_channels = 3
+input_shape = (img_height, img_width, num_channels)
 
 
-#(x_train, _), (x_test, _) = keras.datasets.mnist.load_data()
-#mnist_digits = np.concatenate([x_train, x_test], axis=0)
-#mnist_digits = np .expand_dims(mnist_digits, -1).astype("float32") /255
+# Constructing encoder
 
-# N = sum(len(files) for _, _, files in os.walk("data"))
+# Main encoder block
+encoder_input = Input(shape=input_shape)
+encoder_conv = Conv2D(filters=8, kernel_size=3, strides=2, padding='same', activation='relu')(encoder_input)
+encoder_conv = Conv2D(filters=16, kernel_size=3, strides=2, padding='same', activation='relu')(encoder_conv)
+encoder = Flatten()(encoder_conv)
 
-#images = np.zeros((N, 200, 200, 3), dtype="float32")
+# Encode mean and variance of latent distribution
+mu = Dense(latent_dim)(encoder)
+sigma = Dense(latent_dim)(encoder)
 
+# Sampling layer
+latent_space = Lambda(compute_latent, output_shape=(latent_dim,))([mu, sigma])
+
+# Save convolution shape to be used in the decoder
+conv_shape = K.int_shape(encoder_conv)
+
+# Constructing decoder
+decoder_input = Input(shape=(latent_dim,))
+decoder = Dense(conv_shape[1] * conv_shape[2] * conv_shape[3], activation='relu')(decoder_input)
+decoder = Reshape((conv_shape[1], conv_shape[2], conv_shape[3]))(decoder)
+decoder_conv = Conv2DTranspose(filters=16, kernel_size=3, strides=2, padding='same', activation='relu')(decoder)
+decoder_conv = Conv2DTranspose(filters=8, kernel_size=3, strides=2, padding='same', activation='relu')(decoder_conv)
+decoder_conv = Conv2DTranspose(filters=num_channels, kernel_size=3, padding='same', activation='sigmoid')(decoder_conv)
+
+# Construct models from the layer blocks
+encoder = Model(encoder_input, latent_space, name="Encoder")
+decoder = Model(decoder_input, decoder_conv, name="Decoder")
+vae = Model(encoder_input, decoder(encoder(encoder_input)), name="Variational Autoencoder")
+
+# Get list of filenames for the data generators
 filenames = []
-
-walk = tqdm(os.walk("../data"))
+walk = os.walk("../data")
 for root, dirs, files in walk:
     for file in files:
-        if ".jpg" in file:
+        if ".jpg" in file and "model_images" not in root:
             filenames.append(os.path.join(root, file))
 
 N = len(filenames)
+idx = (N // 10) * 9
+shuffle(filenames)
+train_data = filenames[:idx]
+val_data = filenames[idx:]
 
-#images = np.zeros((N // 2, IMAGE_SIZE, IMAGE_SIZE, 3, 1))
+# Constructing data generators
+generator = DataGenerator(train_data, batch_size=batch_size)
+val_generator = DataGenerator(val_data, batch_size=batch_size)
 
-#tq = tqdm(enumerate(filenames[:N//2]))
-#for i, file in tq:
-#    images[i] = cv2.imread(file).reshape((IMAGE_SIZE, IMAGE_SIZE, 3, 1)) / 255
+# Compile the model
+vae.compile(optimizer='adam', loss=kl_reconstruction_loss)
 
-generator = DataGenerator(filenames)
-#val_generator = DataGenerator(filenames[:N//8])
+# Print model info
+vae.summary()
+encoder.summary()
+decoder.summary()
 
-#vae = VAE(encoder, decoder)
-#vae.compile(optimizer=keras.optimizers.Adam())
+# Train VAE, saving loss history
+history = vae.fit(generator, epochs=epochs, validation_data=val_generator)
 
-#vae.fit(images, epochs=1, batch_size=128)
+# Plotting loss value decrease
+#plt.plot(history.history['loss'])
+#plt.title("Training loss")
+#plt.show()
+#plt.plot(history.history['val_loss'])
+#plt.title("Validation loss")
+#plt.show()
 
-#vae.fit(generator,
-#                  validation_data=val_generator,
-#                  #use_multiprocessing=True,
-#                  #workers=6,
-#                  epochs=5)
+# Transform images to points in latent space using encoder
+encoded = encoder.predict(generator[0])
 
-vae = VariationalAutoEncoder((IMAGE_SIZE, IMAGE_SIZE, 3), 64, 32)
+# Displaying images in latent space
+plt.figure(figsize=(14, 12))
+plt.scatter(encoded[:, 0], encoded[:, 1], s=2)
+plt.colorbar()
+plt.grid()
+plt.show()
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
-
-vae.compile(optimizer, loss=tf.keras.losses.BinaryCrossentropy())
-vae.fit(generator, epochs=1, batch_size=64)
-
-
-import matplotlib.pyplot as plt
+# Displaying several new images
+# Starting point=(0,2), end point=(2,0)
+display_image_sequence(np.ones(latent_dim)*(-1), np.ones(latent_dim), 9)
 
 
-def plot_latent_space(vae, n=15, figsize=15):
+def plot_latent_space(decoder, n=15, figsize=15):
     # display a n*n 2D manifold of digits
-    digit_size = IMAGE_SIZE
+    digit_size = img_width
     scale = 1.0
     figure = np.zeros((digit_size * n, digit_size * n, 3))
     # linearly spaced coordinates corresponding to the 2D plot
@@ -199,12 +191,14 @@ def plot_latent_space(vae, n=15, figsize=15):
     for i, yi in enumerate(grid_y):
         for j, xi in enumerate(grid_x):
             z_sample = np.random.multivariate_normal(np.zeros(latent_dim), np.identity(latent_dim)*3).reshape((1, -1))
-            x_decoded = vae.decoder.call(z_sample)
+            x_decoded = decoder.predict(z_sample)
             digit = np.array(x_decoded).reshape(digit_size, digit_size, 3) * 255
             figure[
                 i * digit_size : (i + 1) * digit_size,
                 j * digit_size : (j + 1) * digit_size,
             ] = digit
+
+    figure = figure.astype(int)
 
     plt.figure(figsize=(figsize, figsize))
     start_range = digit_size // 2
@@ -219,21 +213,6 @@ def plot_latent_space(vae, n=15, figsize=15):
     plt.imshow(figure)
     plt.show()
 
+plot_latent_space(decoder)
 
-plot_latent_space(vae)
-
-
-#def plot_label_clusters(vae, data, labels):
-#    # display a 2D plot of the digit classes in the latent space
-#    z_mean, _, _ = vae.encoder.predict(data)
-#    plt.figure(figsize=(12, 10))
-#    plt.scatter(z_mean[:, 0], z_mean[:, 1], c=labels)
-#    plt.colorbar()
-#    plt.xlabel("z[0]")
-#    plt.ylabel("z[1]")
-#    plt.show()
-
-#(x_train, y_train), _ = keras.datasets.mnist.load_data()
-#x_train = np.expand_dims(x_train, -1).astype("float32") / 255
-
-#plot_label_clusters(vae, x_train, y_train)
+pass
