@@ -1,31 +1,35 @@
-import torch
-import torchvision
-import torchvision.transforms as transforms
-import torch.optim as optim
-import time
-import torch.nn.functional as F
-import torch.nn as nn
-import matplotlib.pyplot as plt
-from torchvision import models
+import numpy as np
+import os
 
-# check GPU availability
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(device)
+import json
+def dict_from_json(path):
+    # open the product catalog:
+    a_file = open(path, "r")
+    catalog = json.loads(a_file.read())
+    a_file.close()
+    return catalog
+categories = dict_from_json('./catalog_by_category.json')
 
-transform = transforms.Compose(
-    [transforms.Resize((224, 224)),
-     transforms.ToTensor(),
-     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                        download=True, transform=transform)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=32,
-                                          shuffle=True)
-testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                       download=True, transform=transform)
-testloader = torch.utils.data.DataLoader(testset, batch_size=32,
-                                         shuffle=False)
+filenames = []
+d = 'data'
+walk = os.walk(d)
+for root, dirs, files in walk:
+    for file in files:
+        if ".jpg" in file and "checkpoint.jpg" not in file:
+            filenames.append(os.path.join(root, file))
 
-vgg16 = models.vgg16(pretrained=True)
-vgg16.to(device)
-print(vgg16)
+N = len(filenames)
 
+exclude = set(['model_images'])
+folders = [os.path.join(d, o)[len(d)+1:] for o in os.listdir(d) 
+                    if os.path.isdir(os.path.join(d,o)) and (os.path.join(d,o)[len(d)+1:] not in exclude)]
+
+labels = []
+for folder in folders:
+    for key, val in categories.items():
+        if folder in val:
+            labels.append([key] * len(os.listdir(d+'/'+folder)))
+flat_labels = [item for sublist in labels for item in sublist]
+            
+labels = np.array(flat_labels)
+print(len(labels))
