@@ -9,7 +9,7 @@ the_model.load_state_dict(torch.load('online_model.pth'))
 
 #make the datasets:
 plot_dataset = make_plot_dataset(10)
-plot_loader = torch.utils.data.DataLoader(plot_dataset, batch_size=20, shuffle=False)
+plot_loader = torch.utils.data.DataLoader(plot_dataset, batch_size=400, shuffle=False)
 
 #make the 'normal' datasets:
 train_dataset, test_dataset, label_encoder = make_dataset()
