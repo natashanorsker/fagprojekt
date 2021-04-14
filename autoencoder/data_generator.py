@@ -6,13 +6,12 @@ from tensorflow.python.keras.utils.data_utils import Sequence
 
 class DataGenerator(Sequence):
     'Generates data for Keras'
-    def __init__(self, list_ids, batch_size=64, dim=(96, 96, 3), n_channels=1, shuffle=True):
+    def __init__(self, list_ids, batch_size=64, dim=(96, 96, 3), shuffle=True):
         'Initialization'
         self.dim = dim
         self.batch_size = batch_size
         # self.labels = labels
         self.list_IDs = list_ids
-        self.n_channels = n_channels
         # self.n_classes = n_classes
         self.shuffle = shuffle
         self.on_epoch_end()
@@ -43,11 +42,11 @@ class DataGenerator(Sequence):
     def __data_generation(self, list_IDs_temp):
         'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
         # Initialization
-        X = np.empty((self.batch_size, *self.dim, self.n_channels))
+        X = np.empty((self.batch_size, *self.dim))
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             # Store sample
-            X[i, ] = cv2.imread(ID).reshape((96, 96, 3, 1))
+            X[i, ] = cv2.imread(ID).reshape((96, 96, 3))
 
         return X / 255
