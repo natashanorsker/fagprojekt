@@ -150,11 +150,10 @@ def list_paths_labels():
 
     return all_img_paths, all_img_labels
 
-def make_dataset(test_size=0.13, random_state=42):
+def make_dataset(label_encoder, test_size=0.13, random_state=42):
     all_img_paths, all_img_labels = list_paths_labels()
     #encode the labels into integers
-    label_encoder = preprocessing.LabelEncoder()
-    labels = label_encoder.fit_transform(all_img_labels)
+    labels = label_encoder.transform(all_img_labels)
 
     #get partition of train and testset:
     X_train, X_test, y_train, y_test = train_test_split(all_img_paths, labels, test_size=test_size, random_state=random_state)
@@ -163,12 +162,11 @@ def make_dataset(test_size=0.13, random_state=42):
     training_set = Dataset(X_train, y_train)
     validation_set = Dataset(X_test, y_test)
 
-    return training_set, validation_set, label_encoder
+    return training_set, validation_set
 
-def make_plot_dataset(n_labels):
+def make_plot_dataset(label_encoder, n_labels):
     all_img_paths, all_img_labels = list_paths_labels()
-    label_encoder = preprocessing.LabelEncoder()
-    labels = label_encoder.fit_transform(all_img_labels)
+    labels = label_encoder.transform(all_img_labels)
 
     labels_set = list(set(labels))
     label_to_indices = {label: np.where(labels == label)[0] for label in labels_set}
@@ -180,7 +178,7 @@ def make_plot_dataset(n_labels):
     for class_ in classes:
         indices = label_to_indices[class_]
         X_train += [all_img_paths[idx] for idx in indices]
-        y_train += [all_img_labels[idx] for idx in indices]
+        y_train += [labels[idx] for idx in indices]
 
     y_train = np.array(y_train)
     plot_dataset = Dataset(X_train, y_train)

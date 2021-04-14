@@ -15,15 +15,19 @@ def pdist(vectors):
         dim=1).view(-1, 1)
     return distance_matrix
 
-def plot_embeddings(embeddings, targets, xlim=None, ylim=None):
+def plot_embeddings(embeddings, targets, colors, label_encoder, xlim=None, ylim=None):
     plt.figure(figsize=(10, 10))
-    for i in targets:
+    for i in set(targets):
         inds = np.where(targets == i)[0]
-        plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5)
+        plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5, color = colors[i])
     if xlim:
         plt.xlim(xlim[0], xlim[1])
     if ylim:
         plt.ylim(ylim[0], ylim[1])
+    targets = label_encoder.inverse_transform(targets)
+    plt.legend(list(set(targets)))
+
+    plt.savefig('plot.png')
 
 
 def extract_embeddings(dataloader, model):
