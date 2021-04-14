@@ -45,6 +45,13 @@ log_interval = 100
 
 fit(triplet_train_loader, triplet_test_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, start_epoch=0)
 
+#save model:
+torch.save(model.state_dict(), 'offline_model.pth')
+
+#load model:
+the_model = TripletNet(embedding_net)
+the_model.load_state_dict(torch.load('offline_model.pth'))
+
 #train_embeddings_tl, train_labels_tl = extract_embeddings(train_loader, model)
 #plot_embeddings(train_embeddings_tl, train_labels_tl)
 val_embeddings_tl, val_labels_tl = extract_embeddings(test_loader, model)

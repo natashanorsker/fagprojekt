@@ -10,6 +10,12 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 from sklearn import preprocessing
 
+import numpy as np
+from PIL import Image
+
+from torch.utils.data import Dataset
+from torch.utils.data.sampler import BatchSampler
+
 from torchvision.datasets import FashionMNIST
 
 # Ignore warnings
@@ -131,8 +137,7 @@ class TripletDataset(Dataset):
     def __len__(self):
         return len(self.dataset)
 
-
-def make_dataset(test_size=0.13, random_state=42):
+def list_paths_labels():
     #first make a list of every possible image
     # get ids for the different classes [ring, earring, etc.]
     catalog = dict_from_json('../catalog.json')
@@ -143,14 +148,13 @@ def make_dataset(test_size=0.13, random_state=42):
         all_img_paths += new_imgs
         all_img_labels += [label]*len(new_imgs)
 
+    return all_img_paths, all_img_labels
+
+def make_dataset(test_size=0.13, random_state=42):
+    all_img_paths, all_img_labels = list_paths_labels()
     #encode the labels into integers
     label_encoder = preprocessing.LabelEncoder()
     labels = label_encoder.fit_transform(all_img_labels)
-
-    #husk at slette:
-    #TODO: slet!
-    #all_img_paths = all_img_paths[::8]
-    #labels = labels[::8]
 
     #get partition of train and testset:
     X_train, X_test, y_train, y_test = train_test_split(all_img_paths, labels, test_size=test_size, random_state=random_state)
@@ -159,12 +163,67 @@ def make_dataset(test_size=0.13, random_state=42):
     training_set = Dataset(X_train, y_train)
     validation_set = Dataset(X_test, y_test)
 
-    #make triplet dataset
-    #triplet_train_set = TripletDataset(training_set, train=True)
-    #triplet_test_set = TripletDataset(validation_set, train=False)
-
     return training_set, validation_set, label_encoder
 
+def make_plot_dataset(n_labels):
+    all_img_paths, all_img_labels = list_paths_labels()
+    label_encoder = preprocessing.LabelEncoder()
+    labels = label_encoder.fit_transform(all_img_labels)
+
+    labels_set = list(set(labels))
+    label_to_indices = {label: np.where(labels == label)[0] for label in labels_set}
+
+    classes = np.random.choice(labels_set, n_labels, replace=False)
+
+    X_train = []
+    y_train = []
+    for class_ in classes:
+        indices = label_to_indices[class_]
+        X_train += [all_img_paths[idx] for idx in indices]
+        y_train += [all_img_labels[idx] for idx in indices]
+
+    y_train = np.array(y_train)
+    plot_dataset = Dataset(X_train, y_train)
+    return plot_dataset
 
 
 ########
+
+class BalancedBatchSampler(BatchSampler):
+    """
+    BatchSampler - from a MNIST-like dataset, samples n_classes and within these classes samples n_samples.
+    Returns batches of size n_classes * n_samples
+    """
+
+    def __init__(self, dataset, n_classes, n_samples):
+        self.dataset = dataset
+        self.labels = self.dataset.labels
+        self.labels_set = list(set(self.labels))
+        self.label_to_indices = {label: np.where(self.labels == label)[0] for label in self.labels_set}
+        for l in self.labels_set:
+            np.random.shuffle(self.label_to_indices[l])
+        self.used_label_indices_count = {label: 0 for label in self.labels_set}
+        self.count = 0
+        self.n_classes = n_classes
+        self.n_samples = n_samples
+        self.n_dataset = len(self.labels)
+        self.batch_size = self.n_samples * self.n_classes
+
+    def __iter__(self):
+        self.count = 0
+        while self.count + self.batch_size < self.n_dataset:
+            classes = np.random.choice(self.labels_set, self.n_classes, replace=False)
+            indices = []
+            for class_ in classes:
+                indices.extend(self.label_to_indices[class_][
+                               self.used_label_indices_count[class_]:self.used_label_indices_count[
+                                                                         class_] + self.n_samples])
+                self.used_label_indices_count[class_] += self.n_samples
+                if self.used_label_indices_count[class_] + self.n_samples > len(self.label_to_indices[class_]):
+                    np.random.shuffle(self.label_to_indices[class_])
+                    self.used_label_indices_count[class_] = 0
+            yield indices
+            self.count += self.n_classes * self.n_samples
+
+    def __len__(self):
+        return self.n_dataset // self.batch_size
