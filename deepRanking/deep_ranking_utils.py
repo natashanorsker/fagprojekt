@@ -17,16 +17,18 @@ def pdist(vectors):
 
 def plot_embeddings(embeddings, targets, colors, label_encoder, xlim=None, ylim=None):
     plt.figure(figsize=(10, 10))
+    col_num = 0
     for i in set(targets):
         inds = np.where(targets == i)[0]
-        plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5, color = colors[i])
+        plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5, color = colors[col_num])
+        col_num+=1
     if xlim:
         plt.xlim(xlim[0], xlim[1])
     if ylim:
         plt.ylim(ylim[0], ylim[1])
     targets = label_encoder.inverse_transform(targets)
     plt.legend(list(set(targets)))
-
+    plt.show()
     plt.savefig('plot.png')
 
 
