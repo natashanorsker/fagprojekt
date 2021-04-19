@@ -1,4 +1,4 @@
-from utilities import *
+from utilities import dict_from_json, trim, list_pictures, info_from_id, sort_by_category, show_images
 import os
 import json
 import requests
@@ -20,6 +20,7 @@ headers = ['Mozilla/5.0 CK={} (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like
            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
            'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148']
 
+has_no_class = dict_from_json('../id_not_in_masterfile.json')
 
 def data_retriever(directory_path, catalog):
     '''
@@ -36,7 +37,7 @@ def data_retriever(directory_path, catalog):
     s.max_redirects = 30
 
     # Parent Directory path (make a DATA directory for storing the data)
-    data_dir = os.path.join(directory_path, '../data')
+    data_dir = os.path.join(directory_path, '../new_data')
 
     try:
         os.chdir(data_dir)
@@ -84,7 +85,7 @@ def data_retriever(directory_path, catalog):
                         im_cropped = trim(im)
                         # pad and resize images:
                         im_rs = ImageOps.pad(image=im_cropped, size=(96, 96), color=im.getpixel((0, 0)))
-                        im_rs.save("{}_{}_OG.jpg".format(product, str(i).zfill(2)), 'RGB')
+                        im_rs.save("{}_{}_OG.jpg".format(product, str(i).zfill(2)))
 
 
                 except requests.ConnectionError:
@@ -183,8 +184,13 @@ if __name__ == "__main__":
     # important in order to get the same rotated images:
     random.seed(420)
     seed(420)
-
+    has_no_class = dict_from_json('../id_not_in_masterfile.json')
     catalog = dict_from_json("../catalog.json")
+
+    #removing the products that are not in the masterfile from the catalog
+    for product in has_no_class:
+        if product in catalog.keys():
+            catalog.pop(product)
 
     # download the product images from pandoras website:
     data_retriever(os.getcwd(), catalog)

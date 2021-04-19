@@ -3,6 +3,7 @@ import shutil
 from utilities import dict_from_json
 
 def move_files(directory_path, to_move):
+    # change data_dir to the directory where your data is stored (probably just "../data")
     data_dir = os.path.join(directory_path, '../data_copy')
     to_move_paths = [os.path.join(data_dir, i) for i in to_move]
     os.chdir(data_dir)
@@ -19,7 +20,12 @@ def move_files(directory_path, to_move):
             shutil.move(source, destination)
     print("Done")
 
+def clean_catalog(catalog, to_remove):
+    for product in to_remove:
+        if product in catalog.keys():
+            catalog.pop(product)
 
 directory_path = os.getcwd()
 has_no_class = dict_from_json('../id_not_in_masterfile.json')
 move_files(directory_path, has_no_class)
+
