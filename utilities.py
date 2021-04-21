@@ -1,4 +1,4 @@
-from data_code.data_loader import *
+
 import seaborn as sns
 from PIL import Image, ImageChops
 import matplotlib.pyplot as plt
