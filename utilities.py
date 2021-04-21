@@ -40,7 +40,7 @@ def trim(im):
         return im.crop(bbox)
 
 
-def info_from_id(id, master_file_path='masterdata.csv'):
+def info_from_id(id, master_file_path='../masterdata.csv'):
     # should return the category in a string
     df = pd.read_csv(master_file_path, sep=';')
     df.columns = df.columns.str.lower()
