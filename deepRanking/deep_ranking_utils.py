@@ -1,12 +1,8 @@
-import torch.nn as nn
-import torch.nn.functional as F
+
 from itertools import combinations
 import numpy as np
 import torch
-import matplotlib
-import matplotlib.pyplot as plt
 cuda = torch.cuda.is_available()
-from dataset import list_paths_labels
 
 
 # utility functions
@@ -15,131 +11,11 @@ def pdist(vectors):
         dim=1).view(-1, 1)
     return distance_matrix
 
-def plot_embeddings(embeddings, targets, xlim=None, ylim=None):
-    plt.figure(figsize=(10, 10))
-    for i in targets:
-        inds = np.where(targets == i)[0]
-        plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5)
-    if xlim:
-        plt.xlim(xlim[0], xlim[1])
-    if ylim:
-        plt.ylim(ylim[0], ylim[1])
-
-
-def extract_embeddings(dataloader, model):
-    with torch.no_grad():
-        model.eval()
-        embeddings = np.zeros((len(dataloader.dataset), 2))
-        labels = np.zeros(len(dataloader.dataset))
-        k = 0
-        for images, target in dataloader:
-            if cuda:
-                images = images.cuda()
-            embeddings[k:k + len(images)] = model.get_embedding(images).data.cpu().numpy()
-            labels[k:k + len(images)] = target.numpy()
-            k += len(images)
-    return embeddings, labels
-
-
-"""
-def get_embeddings(dataset, model, n_labels):
-
-    labels = dataset.labels
-    labels_set = list(set(labels))
-    label_to_indices = {label: np.where(labels == label)[0] for label in labels_set}
-
-    classes = np.random.choice(labels_set, n_labels, replace=False)
-
-    embeddings = []
-    labels = []
-
-    for class_ in classes:
-        indices = label_to_indices[class_]
-        #img = dataset[1163][0]
-        embeddings += [model.get_embedding(dataset[idx][0]) for idx in indices]
-        labels += [class_]*len(indices)
-
-    return embeddings, labels
-"""
-
-
-class EmbeddingNet(nn.Module):
-    # https://github.com/adambielski/siamese-triplet/blob/master/networks.py
-    def __init__(self):
-        super(EmbeddingNet, self).__init__()
-        self.convnet = nn.Sequential(nn.Conv2d(3, 32, 5), nn.PReLU(),
-                                     nn.MaxPool2d(2, stride=2),
-                                     nn.MaxPool2d(2, stride=2),
-                                     nn.Conv2d(32, 64, 5), nn.PReLU(),
-                                     nn.MaxPool2d(2, stride=2))
-
-        self.fc = nn.Sequential(nn.Linear(64 * 9 * 9, 256),
-                                nn.PReLU(),
-                                nn.Linear(256, 256),
-                                nn.PReLU(),
-                                nn.Linear(256, 2)
-                                )
-
-    def forward(self, x):
-        output = self.convnet(x)
-        output = output.view(output.size()[0], -1)
-        output = self.fc(output)
-        return output
-
-    def get_embedding(self, x):
-        return self.forward(x)
-
-
-class TripletNet(nn.Module):
-    def __init__(self, embedding_net):
-        super(TripletNet, self).__init__()
-        self.embedding_net = embedding_net
-
-    def forward(self, x1, x2, x3):
-        output1 = self.embedding_net(x1)
-        output2 = self.embedding_net(x2)
-        output3 = self.embedding_net(x3)
-        return output1, output2, output3
-
-    def get_embedding(self, x):
-        return self.embedding_net(x)
-
-
-class TripletLoss(nn.Module):
-    """
-    Triplet loss
-    Takes embeddings of an anchor sample, a positive sample and a negative sample
-    """
-
-    def __init__(self, margin):
-        super(TripletLoss, self).__init__()
-        self.margin = margin
-
-    def forward(self, anchor, positive, negative, size_average=True):
-        distance_positive = (anchor - positive).pow(2).sum(1)  # .pow(.5)
-        distance_negative = (anchor - negative).pow(2).sum(1)  # .pow(.5)
-        losses = F.relu(distance_positive - distance_negative + self.margin)
-        return losses.mean() if size_average else losses.sum()
-
-
-class QuadletNet(nn.Module):
-    def __init__(self, embedding_net):
-        super(TripletNet, self).__init__()
-        self.embedding_net = embedding_net
-
-    def forward(self, x1, x2, x3, x4):
-        output1 = self.embedding_net(x1)
-        output2 = self.embedding_net(x2)
-        output3 = self.embedding_net(x3)
-        output4 = self.embedding_net(x4)
-        return output1, output2, output3, output4
-
-    def get_embedding(self, x):
-        return self.embedding_net(x)
-
 
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
         start_epoch=0):
+
+    val_losses = []
     """
     Loaders, model, loss function and metrics should work together for a given task,
     i.e. The model should be able to process data output of loaders,
@@ -162,7 +38,9 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             message += '\t{}: {}'.format(metric.name(), metric.value())
 
         val_loss, metrics = test_epoch(val_loader, model, loss_fn, cuda, metrics)
+        val_losses += val_loss
         val_loss /= len(val_loader)
+
 
         message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, n_epochs,
                                                                                  val_loss)
@@ -170,6 +48,8 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             message += '\t{}: {}'.format(metric.name(), metric.value())
 
         print(message)
+
+    return sum(val_losses)/len(val_losses)
 
 
 def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics):
@@ -379,94 +259,5 @@ def SemihardNegativeTripletSelector(margin, cpu=False): return FunctionNegativeT
                                                                                   cpu=cpu)
 
 
-class OnlineTripletLoss(nn.Module):
-    """
-    Online Triplets loss
-    Takes a batch of embeddings and corresponding labels.
-    Triplets are generated using triplet_selector object that take embeddings and targets and return indices of
-    triplets
-    """
-
-    def __init__(self, margin, triplet_selector):
-        super(OnlineTripletLoss, self).__init__()
-        self.margin = margin
-        self.triplet_selector = triplet_selector
-
-    def forward(self, embeddings, target):
-
-        triplets = self.triplet_selector.get_triplets(embeddings, target)
-
-        if embeddings.is_cuda:
-            triplets = triplets.cuda()
-
-        ap_distances = (embeddings[triplets[:, 0]] - embeddings[triplets[:, 1]]).pow(2).sum(1)  # .pow(.5)
-        an_distances = (embeddings[triplets[:, 0]] - embeddings[triplets[:, 2]]).pow(2).sum(1)  # .pow(.5)
-        losses = F.relu(ap_distances - an_distances + self.margin)
-
-        return losses.mean(), len(triplets)
 
 
-
-class Metric:
-    def __init__(self):
-        pass
-
-    def __call__(self, outputs, target, loss):
-        raise NotImplementedError
-
-    def reset(self):
-        raise NotImplementedError
-
-    def value(self):
-        raise NotImplementedError
-
-    def name(self):
-        raise NotImplementedError
-
-
-class AccumulatedAccuracyMetric(Metric):
-    """
-    Works with classification model
-    """
-
-    def __init__(self):
-        self.correct = 0
-        self.total = 0
-
-    def __call__(self, outputs, target, loss):
-        pred = outputs[0].data.max(1, keepdim=True)[1]
-        self.correct += pred.eq(target[0].data.view_as(pred)).cpu().sum()
-        self.total += target[0].size(0)
-        return self.value()
-
-    def reset(self):
-        self.correct = 0
-        self.total = 0
-
-    def value(self):
-        return 100 * float(self.correct) / self.total
-
-    def name(self):
-        return 'Accuracy'
-
-
-class AverageNonzeroTripletsMetric(Metric):
-    '''
-    Counts average number of nonzero triplets found in minibatches
-    '''
-
-    def __init__(self):
-        self.values = []
-
-    def __call__(self, outputs, target, loss):
-        self.values.append(loss[1])
-        return self.value()
-
-    def reset(self):
-        self.values = []
-
-    def value(self):
-        return np.mean(self.values)
-
-    def name(self):
-        return 'Average nonzero triplets'

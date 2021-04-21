@@ -1,11 +1,14 @@
-import torch
-from torchvision import transforms
+
 from dataset import make_dataset, TripletDataset
-from deep_ranking_utils import EmbeddingNet, TripletNet, TripletLoss, fit, extract_embeddings, plot_embeddings
-import torch
+from nets import EmbeddingNet, TripletNet
+from losses import TripletLoss
+from deep_ranking_utils import AllTripletSelector, HardestNegativeTripletSelector, SemihardNegativeTripletSelector, RandomNegativeTripletSelector, AverageNonzeroTripletsMetric, fit
 from torch.optim import lr_scheduler
 import torch.optim as optim
-from torch.autograd import Variable
+import torch
+cuda = torch.cuda.is_available()
+
+
 
 import numpy as np
 cuda = torch.cuda.is_available()
@@ -54,5 +57,5 @@ the_model.load_state_dict(torch.load('offline_model.pth'))
 
 #train_embeddings_tl, train_labels_tl = extract_embeddings(train_loader, model)
 #plot_embeddings(train_embeddings_tl, train_labels_tl)
-val_embeddings_tl, val_labels_tl = extract_embeddings(test_loader, model)
-plot_embeddings(val_embeddings_tl, val_labels_tl)
+#val_embeddings_tl, val_labels_tl = extract_embeddings(test_loader, model)
+#plot_embeddings(val_embeddings_tl, val_labels_tl)

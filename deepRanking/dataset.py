@@ -1,29 +1,25 @@
 from __future__ import print_function, division
-from utilities import *
-
+from utilities import list_pictures
+import json
 import os
 import torch
-from torch.utils.data import Dataset, DataLoader
-from PIL import Image
+from torch.utils.data import Dataset
 import torchvision.transforms.functional as TF
 from sklearn.model_selection import train_test_split
-import numpy as np
-from sklearn import preprocessing
-
+import random
 import numpy as np
 from PIL import Image
+from numpy.random import seed
 
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import BatchSampler
-
-from torchvision.datasets import FashionMNIST
 
 # Ignore warnings
 import warnings
 
 # set seed
-random.seed(42)
-seed(42)
+random.seed(420)
+seed(420)
 
 
 class Dataset(torch.utils.data.Dataset):
@@ -31,7 +27,6 @@ class Dataset(torch.utils.data.Dataset):
         'Initialization'
         self.labels = labels
         self.list_IDs = list_IDs
-
 
     def __len__(self):
         'Denotes the total number of samples'
@@ -86,7 +81,6 @@ class TripletDataset(Dataset):
                         for i in range(len(self.data))]
             self.test_triplets = triplets
 
-
     def __getitem__(self, index):
 
         if self.train:
@@ -131,60 +125,90 @@ class TripletDataset(Dataset):
                 load_img3 = Image.open(self.data[self.test_triplets[index][2]]).convert('RGB')
                 img3 = TF.to_tensor(load_img3)
 
-
         return (img1, img2, img3), []
 
     def __len__(self):
         return len(self.dataset)
 
+
 def list_paths_labels():
-    #first make a list of every possible image
+    # first make a list of every possible image
     # get ids for the different classes [ring, earring, etc.]
-    catalog = dict_from_json('../catalog.json')
+    catalog = json.loads(open('../catalog.json', "r").read())
+    # catalog = dict_from_json('../catalog.json')
     all_img_paths = []
     all_img_labels = []
     for label in catalog.keys():
         new_imgs = list_pictures(os.path.join("../data", label))
         all_img_paths += new_imgs
-        all_img_labels += [label]*len(new_imgs)
+        all_img_labels += [label] * len(new_imgs)
 
     return all_img_paths, all_img_labels
 
-def make_dataset(test_size=0.13, random_state=42):
+"""
+def make_dataset(label_encoder, test_size=0.13, random_state=42):
     all_img_paths, all_img_labels = list_paths_labels()
-    #encode the labels into integers
-    label_encoder = preprocessing.LabelEncoder()
-    labels = label_encoder.fit_transform(all_img_labels)
+    # encode the labels into integers
+    labels = label_encoder.transform(all_img_labels)
 
-    #get partition of train and testset:
-    X_train, X_test, y_train, y_test = train_test_split(all_img_paths, labels, test_size=test_size, random_state=random_state)
+    # get partition of train and testset:
+    X_train, X_test, y_train, y_test = train_test_split(all_img_paths, labels, test_size=test_size,
+                                                        random_state=random_state)
 
-    #make 'generic' dataset
+    # make 'generic' dataset
     training_set = Dataset(X_train, y_train)
     validation_set = Dataset(X_test, y_test)
 
-    return training_set, validation_set, label_encoder
+    return training_set, validation_set
+"""
 
-def make_plot_dataset(n_labels):
+def make_dataset(label_encoder, n_test_products):
     all_img_paths, all_img_labels = list_paths_labels()
-    label_encoder = preprocessing.LabelEncoder()
-    labels = label_encoder.fit_transform(all_img_labels)
+    labels = label_encoder.transform(all_img_labels)
 
     labels_set = list(set(labels))
     label_to_indices = {label: np.where(labels == label)[0] for label in labels_set}
 
-    classes = np.random.choice(labels_set, n_labels, replace=False)
+    classes = np.random.choice(labels_set, n_test_products, replace=False)
 
+    test_products = np.random.choice(labels_set, n_test_products, replace=False)
+    train_products = set(labels_set) - set(test_products)
+
+    X_train = []
+    y_train = []
+    X_test = []
+    y_test = []
+
+    for test_product in test_products:
+        indices = label_to_indices[test_product]
+        X_test += [all_img_paths[idx] for idx in indices]
+        y_test += [labels[idx] for idx in indices]
+
+    for train_product in train_products:
+        indices = label_to_indices[train_product]
+        X_train += [all_img_paths[idx] for idx in indices]
+        y_train += [labels[idx] for idx in indices]
+
+    y_test = np.array(y_test)
+    y_train = np.array(y_train)
+
+    #maybe delete later idk:
+    """
     X_train = []
     y_train = []
     for class_ in classes:
         indices = label_to_indices[class_]
         X_train += [all_img_paths[idx] for idx in indices]
-        y_train += [all_img_labels[idx] for idx in indices]
-
+        y_train += [labels[idx] for idx in indices]
     y_train = np.array(y_train)
     plot_dataset = Dataset(X_train, y_train)
-    return plot_dataset
+    ##
+    """
+
+    training_set = Dataset(X_train, y_train)
+    validation_set = Dataset(X_test, y_test)
+
+    return training_set, validation_set
 
 
 ########
