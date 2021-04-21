@@ -18,8 +18,8 @@ from torch.utils.data.sampler import BatchSampler
 import warnings
 
 # set seed
-random.seed(42)
-seed(42)
+random.seed(420)
+seed(420)
 
 
 class Dataset(torch.utils.data.Dataset):
@@ -145,7 +145,7 @@ def list_paths_labels():
 
     return all_img_paths, all_img_labels
 
-
+"""
 def make_dataset(label_encoder, test_size=0.13, random_state=42):
     all_img_paths, all_img_labels = list_paths_labels()
     # encode the labels into integers
@@ -160,27 +160,55 @@ def make_dataset(label_encoder, test_size=0.13, random_state=42):
     validation_set = Dataset(X_test, y_test)
 
     return training_set, validation_set
+"""
 
-
-def make_plot_dataset(label_encoder, n_labels):
+def make_dataset(label_encoder, n_test_products):
     all_img_paths, all_img_labels = list_paths_labels()
     labels = label_encoder.transform(all_img_labels)
 
     labels_set = list(set(labels))
     label_to_indices = {label: np.where(labels == label)[0] for label in labels_set}
 
-    classes = np.random.choice(labels_set, n_labels, replace=False)
+    classes = np.random.choice(labels_set, n_test_products, replace=False)
 
+    test_products = np.random.choice(labels_set, n_test_products, replace=False)
+    train_products = set(labels_set) - set(test_products)
+
+    X_train = []
+    y_train = []
+    X_test = []
+    y_test = []
+
+    for test_product in test_products:
+        indices = label_to_indices[test_product]
+        X_test += [all_img_paths[idx] for idx in indices]
+        y_test += [labels[idx] for idx in indices]
+
+    for train_product in train_products:
+        indices = label_to_indices[train_product]
+        X_train += [all_img_paths[idx] for idx in indices]
+        y_train += [labels[idx] for idx in indices]
+
+    y_test = np.array(y_test)
+    y_train = np.array(y_train)
+
+    #maybe delete later idk:
+    """
     X_train = []
     y_train = []
     for class_ in classes:
         indices = label_to_indices[class_]
         X_train += [all_img_paths[idx] for idx in indices]
         y_train += [labels[idx] for idx in indices]
-
     y_train = np.array(y_train)
     plot_dataset = Dataset(X_train, y_train)
-    return plot_dataset
+    ##
+    """
+
+    training_set = Dataset(X_train, y_train)
+    validation_set = Dataset(X_test, y_test)
+
+    return training_set, validation_set
 
 
 ########

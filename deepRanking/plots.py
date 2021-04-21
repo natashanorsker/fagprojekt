@@ -1,7 +1,7 @@
 import torchvision.utils
 
 from nets import EmbeddingNet
-from dataset import make_plot_dataset
+from dataset import make_dataset
 from sklearn import preprocessing
 from utilities import dict_from_json
 from utilities import info_from_id
@@ -10,10 +10,6 @@ import sys
 import torch
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from torch.utils.tensorboard import SummaryWriter
-from tensorboardX import SummaryWriter
-
-writer = SummaryWriter("runs/pandora")
 
 cuda = torch.cuda.is_available()
 
@@ -25,19 +21,29 @@ def plot_embeddings(embeddings, targets, encoder, xlim=None, ylim=None):
                'Earrings': 'D', 'Misc': 'p', 'Set': '+'}
     col_num = 0
     targets = encoder.inverse_transform(targets)
+    legend = []
     for i in set(targets):
         category = info_from_id(i, master_file_path='../data_code/masterdata.csv')
         inds = np.where(targets == i)[0]
+        if category not in legend:
+            legend += [category]
+            label = True
+
         plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5, color=colors[col_num],
-                    marker=markers[category])
+                    marker=markers[category], label=category if label else '')
+
         col_num += 1
+        label=False
+
     if xlim:
         plt.xlim(xlim[0], xlim[1])
     if ylim:
         plt.ylim(ylim[0], ylim[1])
 
-    plt.legend(list(set(targets)), loc='best')
-    plt.legend(list(set(targets)), loc='best')
+
+    #plt.legend(list(set(targets)), loc='best')
+    #plt.legend(list(markers.keys()), loc='best')
+    plt.legend()
     plt.savefig('online_embedding_plot.png')
     plt.show()
 
@@ -69,19 +75,8 @@ if __name__ == "__main__":
     the_model.load_state_dict(torch.load('online_model.pth'))
 
     # make the datasets:
-    plot_dataset = make_plot_dataset(label_encoder, 15)
-    plot_loader = torch.utils.data.DataLoader(plot_dataset, batch_size=400, shuffle=False)
-
-
-
-    #make image grid for tensorboard:
-    examples = iter(plot_loader)
-    example_data, example_targets = examples.next()
-
-    img_grid = torchvision.utils.make_grid(example_data)
-    writer.add_image('pandora_images', img_grid)
-    writer.close()
-
+    trainset, testset = make_dataset(label_encoder, 15)
+    plot_loader = torch.utils.data.DataLoader(testset, batch_size=400, shuffle=False)
 
 
     # extract embeddings and plot:
