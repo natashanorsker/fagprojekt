@@ -46,7 +46,7 @@ log_interval = 150
 fit(online_train_loader, online_test_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[AverageNonzeroTripletsMetric()])
 
 #save model:
-torch.save(model.state_dict(), 'RNTS_2ep_1m.pth')
+torch.save(model.state_dict(), 'RNTS_{}ep_{}m.pth'.format(n_epochs,margin))
 
 #load model:
 #the_model = EmbeddingNet()
