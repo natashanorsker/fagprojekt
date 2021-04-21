@@ -3,7 +3,7 @@ import keras
 import cv2
 from tensorflow.python.keras.utils.data_utils import Sequence
 import os
-from utilities import info_from_id
+from utilities import labels_from_ids
 
 
 class DataGenerator(Sequence):
@@ -55,7 +55,7 @@ class DataGenerator(Sequence):
         X = X / 255
 
         if self.labels:
-            l = [info_from_id(os.path.split(ID)[-1].split("_")[0]) for ID in list_IDs_temp]
+            l = labels_from_ids([os.path.split(ID)[-1].split("_")[0] for ID in list_IDs_temp])
             return X, l
         else:
             return X, X

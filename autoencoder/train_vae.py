@@ -30,7 +30,7 @@ np.random.seed(seed)
 # Training parameters
 latent_dim = 32  # Dimension of the latent space
 batch_size = 2**9  # Batch size for the data generator
-epochs = 1  # Epochs to train the model for
+epochs = 5  # Epochs to train the model for
 
 start_time = datetime.datetime.now()
 logfile_name = f"vae_log_{start_time}.txt"

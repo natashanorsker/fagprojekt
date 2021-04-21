@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from random import shuffle
 from data_generator import DataGenerator
-from utilities import info_from_id
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 model_paths = os.listdir("models")
@@ -34,9 +33,10 @@ for root, dirs, files in walk:
 
 # Constructing data generators
 shuffle(filenames)
-generator = DataGenerator(filenames, batch_size=128, labels=True)
+generator = DataGenerator(filenames, batch_size=2**9, labels=True)
 
-def plot_latent_space(decoder, n=15, figsize=15):
+
+def plot_latent_space(decoder, n=9, figsize=15):
     # display a n*n 2D manifold of digits
     digit_size = 96
     scale = 1.0
@@ -64,11 +64,10 @@ def plot_latent_space(decoder, n=15, figsize=15):
     pixel_range = np.arange(start_range, end_range, digit_size)
     sample_range_x = np.round(grid_x, 1)
     sample_range_y = np.round(grid_y, 1)
-    plt.xticks(pixel_range, sample_range_x)
-    plt.yticks(pixel_range, sample_range_y)
-    plt.xlabel("z[0]")
-    plt.ylabel("z[1]")
+    plt.xticks([])
+    plt.yticks([])
     plt.imshow(figure)
+    plt.title(f"{n}x{n} " + r"images sampled from the latent space $\sim \mathcal{N}(\mathbf{0},\mathbf{I})$")
     plt.show()
 
 
@@ -79,7 +78,7 @@ def display_image_sequence(start, end, no_of_images):
     new_images = decoder.predict(new_points)
 
     # Display some images
-    fig, axes = plt.subplots(ncols=no_of_images, sharex="none", sharey="all", figsize=(20, 7))
+    fig, axes = plt.subplots(ncols=no_of_images, sharex="none", sharey="all", figsize=(10, 4))
 
     for i in range(no_of_images):
         axes[i].imshow(new_images[i])
@@ -92,9 +91,13 @@ def display_image_sequence(start, end, no_of_images):
 imgs, labels = generator[0]
 encoded = encoder.predict(imgs)
 
+d = {v: i for i, v in enumerate(list(set(labels)))}
+
+cols = [d[l] for l in labels]
+
 # Displaying images in latent space
 plt.figure(figsize=(14, 12))
-plt.scatter(encoded[:, 0], encoded[:, 1], s=2, c=labels)
+plt.scatter(encoded[:, 0], encoded[:, 1], s=10, c=cols)
 plt.colorbar()
 plt.grid()
 plt.show()
