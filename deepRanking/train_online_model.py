@@ -19,13 +19,14 @@ label_encoder.fit(list(catalog.keys()))
 #make the 'normal' datasets:
 train_dataset, test_dataset = make_dataset(label_encoder, n_test_products=100)
 
+n_classes, n_samples = 10, 40
 #make the batch samplers:
-train_batch_sampler = BalancedBatchSampler(train_dataset, n_classes=100, n_samples=40)
-test_batch_sampler = BalancedBatchSampler(test_dataset, n_classes=20, n_samples=40)
+train_batch_sampler = BalancedBatchSampler(train_dataset, n_classes=n_classes, n_samples=n_samples)
+test_batch_sampler = BalancedBatchSampler(test_dataset, n_classes=n_classes, n_samples=n_samples)
 
 #make the dataloaders:
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=500, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=500, shuffle=False)
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=n_classes*n_samples, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=n_classes*n_samples, shuffle=False)
 
 #load the dataset:
 kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
@@ -47,6 +48,7 @@ log_interval = 150
 #fit the model
 fit(online_train_loader, online_test_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[AverageNonzeroTripletsMetric()])
 
+'''
 #save model:
 torch.save(model.state_dict(), 'online_model.pth')
 
@@ -57,7 +59,7 @@ the_model.load_state_dict(torch.load('online_model.pth'))
 # extract embeddings and plot:
 val_embeddings_tl, val_labels_tl = extract_embeddings(test_loader, the_model)
 plot_embeddings(val_embeddings_tl, val_labels_tl, encoder=label_encoder)
-
+'''
 #train_embeddings_otl, train_labels_otl = extract_embeddings(train_loader, model)
 #plot_embeddings(train_embeddings_otl, train_labels_otl)
 #val_embeddings_otl, val_labels_otl = extract_embeddings(test_loader, model)
