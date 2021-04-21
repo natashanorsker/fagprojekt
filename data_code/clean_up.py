@@ -3,7 +3,7 @@ import shutil
 from utilities import dict_from_json
 
 def move_files(directory_path, to_move):
-    data_dir = os.path.join(directory_path, '../data_copy')
+    data_dir = os.path.join(directory_path, '../data')
     to_move_paths = [os.path.join(data_dir, i) for i in to_move]
     os.chdir(data_dir)
 
