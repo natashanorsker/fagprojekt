@@ -20,11 +20,6 @@ def move_files(directory_path, to_move):
             shutil.move(source, destination)
     print("Done")
 
-def clean_catalog(catalog, to_remove):
-    for product in to_remove:
-        if product in catalog.keys():
-            catalog.pop(product)
-
 directory_path = os.getcwd()
 has_no_class = dict_from_json('../id_not_in_masterfile.json')
 move_files(directory_path, has_no_class)

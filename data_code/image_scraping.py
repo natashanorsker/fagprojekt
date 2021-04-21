@@ -4,6 +4,7 @@ import json
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 import random
+from utilities import dict_from_json
 
 
 #websites: (these are the websites with the same format as UK)
@@ -99,3 +100,12 @@ def create_catalog(websites, save=True):
 
 if __name__ == "__main__":
     new_catalog = create_catalog(save=True, websites=websites)
+    has_no_class = dict_from_json('id_not_in_masterfile.json')
+
+    for product in has_no_class:
+        if product in new_catalog.keys():
+            new_catalog.pop(product)
+
+    a_file = open("../catalog.json", "w")
+    json.dump(new_catalog, a_file)
+    a_file.close()
