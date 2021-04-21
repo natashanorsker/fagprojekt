@@ -1,3 +1,5 @@
+autoencoder/models/
+logs/
 data/
 data_small/
 .idea/
