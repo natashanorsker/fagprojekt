@@ -89,6 +89,7 @@ def create_catalog(websites, save=True):
             new_catalog[iD]['product_image_url'] = url_list
 
 
+
         if save:
             a_file = open("../catalog.json", "w")
             json.dump(new_catalog, a_file)
