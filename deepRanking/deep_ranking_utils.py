@@ -15,7 +15,6 @@ def pdist(vectors):
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
         start_epoch=0):
 
-    val_losses = []
     """
     Loaders, model, loss function and metrics should work together for a given task,
     i.e. The model should be able to process data output of loaders,
@@ -38,7 +37,6 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             message += '\t{}: {}'.format(metric.name(), metric.value())
 
         val_loss, metrics = test_epoch(val_loader, model, loss_fn, cuda, metrics)
-        val_losses += val_loss
         val_loss /= len(val_loader)
 
 
@@ -48,8 +46,6 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             message += '\t{}: {}'.format(metric.name(), metric.value())
 
         print(message)
-
-    return sum(val_losses)/len(val_losses)
 
 
 def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics):

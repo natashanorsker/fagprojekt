@@ -2,11 +2,13 @@ import numpy as np
 import keras
 import cv2
 from tensorflow.python.keras.utils.data_utils import Sequence
+import os
+from utilities import labels_from_ids
 
 
 class DataGenerator(Sequence):
     'Generates data for Keras'
-    def __init__(self, list_ids, batch_size=64, dim=(96, 96, 3), shuffle=True):
+    def __init__(self, list_ids, batch_size=64, dim=(96, 96, 3), shuffle=True, labels=False):
         'Initialization'
         self.dim = dim
         self.batch_size = batch_size
@@ -14,6 +16,7 @@ class DataGenerator(Sequence):
         self.list_IDs = list_ids
         # self.n_classes = n_classes
         self.shuffle = shuffle
+        self.labels = labels
         self.on_epoch_end()
 
     def __len__(self):
@@ -49,4 +52,10 @@ class DataGenerator(Sequence):
             # Store sample
             X[i, ] = cv2.imread(ID).reshape((96, 96, 3))
 
-        return X / 255
+        X = X / 255
+
+        if self.labels:
+            l = labels_from_ids([os.path.split(ID)[-1].split("_")[0] for ID in list_IDs_temp])
+            return X, l
+        else:
+            return X, X

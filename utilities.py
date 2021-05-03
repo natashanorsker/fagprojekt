@@ -40,22 +40,24 @@ def trim(im):
         return im.crop(bbox)
 
 
-def info_from_id(id, master_file_path='masterdata.csv'):
+def labels_from_ids(ids, master_file_path='../data_code/masterdata.csv'):
     # should return the category in a string
     df = pd.read_csv(master_file_path, sep=';')
     df.columns = df.columns.str.lower()
 
-    try:
-        info = df['item category'].loc[df.key == id].values[0]
+    labels = []
+    for id in ids:
+        try:
+            label = df['item category'].loc[df.key == id].values[0]
 
-        if info not in ['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings']:
-            info = 'Misc'
+            if label not in ['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings']:
+                label = 'Misc'
 
-    except:
-        print("Can't find info on product: {}".format(id))
-        info = 'Set'
-
-    return info
+        except:
+            print("Can't find info on product: {}".format(id))
+            label = 'Set'
+        labels.append(label)
+    return labels
 
 
 def sort_by_category(catalog, category='item category', master_file_path='masterdata.csv', save=True):

@@ -1,9 +1,9 @@
-from .dataset import BalancedBatchSampler, make_dataset
-from .nets import EmbeddingNet
-from .plots import extract_embeddings, plot_embeddings
-from .losses import OnlineTripletLoss, AverageNonzeroTripletsMetric
-from .deep_ranking_utils import AllTripletSelector, HardestNegativeTripletSelector, SemihardNegativeTripletSelector, \
-    RandomNegativeTripletSelector, fit
+from dataset import BalancedBatchSampler, make_dataset
+from nets import EmbeddingNet
+from plots import extract_embeddings, plot_embeddings
+from losses import OnlineTripletLoss, AverageNonzeroTripletsMetric
+from deep_ranking_utils_tensorboard_tester import AllTripletSelector, HardestNegativeTripletSelector, SemihardNegativeTripletSelector, \
+    RandomNegativeTripletSelector, Experiment
 from torch.optim import lr_scheduler
 from torch.utils.tensorboard import SummaryWriter  # to print to tensorboard
 from sklearn import preprocessing
@@ -51,7 +51,7 @@ scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
 n_epochs = 1
 log_interval = 150
 
-writer = SummaryWriter(f'runs/Fagprojekt/RNTS_{BATCH_SIZE}bs_{n_epochs}ep_{lr}_lr_{margin}m')
+#writer = SummaryWriter(f'runs/Fagprojekt/RNTS_{BATCH_SIZE}bs_{n_epochs}ep_{lr}_lr_{margin}m')
 
 
 #margins = [1, 10]
@@ -59,14 +59,19 @@ writer = SummaryWriter(f'runs/Fagprojekt/RNTS_{BATCH_SIZE}bs_{n_epochs}ep_{lr}_l
 #n_epochs = [1]
 
 # fit the model
-avr_val_loss = fit(online_train_loader, online_test_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval,
-    metrics=[AverageNonzeroTripletsMetric()])
+#fit(online_train_loader, online_test_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[AverageNonzeroTripletsMetric()])
 
 #we need to get the loss for the specific fit or find a way to calculate accuracy
 
 # write to tensorboard:
-writer.add_scalar("Validation loss", avr_val_loss)
-writer.add_hparams({'lr': lr, 'margin': margin, 'batch_size': BATCH_SIZE, 'n_epochs': n_epochs}, {'validation_loss': avr_val_loss})
+# run experiments:
+experiments = []
+
+#make the whole grid thing here
+run = Experiment(train_loader=online_train_loader, val_loader=online_test_loader, model=model, loss_fn=loss_fn, optimizer=optimizer, scheduler=scheduler, cuda=cuda, log_interval=log_interval,
+                 to_tensorboard=True, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0, margin=margin, lr=lr, n_epochs=n_epochs)
+
+experiments.append(run)
 
 # save model:
 torch.save(model.state_dict(), 'online_model.pth')
