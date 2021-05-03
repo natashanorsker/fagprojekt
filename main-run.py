@@ -18,10 +18,10 @@ print('Extracting jewellery')
 impath = 'Figures/test3.jpg'
 im = cv2.imread(impath)
 crop_img = extract1jewel(im)
+# stupid cv2 nonsense they use BGR and not RGB like wtf? fixes image getting blue
+crop_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB) 
 query_img = Image.fromarray(crop_img)
 im = Image.open(impath)
-query_img.save('q.png')
-cv2.imwrite('qcv2.png', crop_img)
 #%% Step 2 get embeddings for corpus
 print('Getting embeddings')
 model = EmbeddingNet()
@@ -68,32 +68,27 @@ with torch.no_grad():
 
 tree = cKDTree(val_embeddings_tl)
 n_neighbor = 5
-dists, idx = tree.query(embedding, k=n_neighbor)
+dists, idx = tree.query(embedding.numpy().ravel(), k=n_neighbor)
 
 #%% 5 show  nearest images
-fig = plt.figure(figsize=((15, 4)))
-plt.title('5 Most similar images to query image')
-fig.add_subplot(1, n_neighbor+2, 1)
-# plt.imshow(im.resize((96*4,96*4)))
-plt.imshow(im)
-plt.axis('off')
-plt.title('Query')
-fig.add_subplot(1, n_neighbor+2, 2)
-# imgarr = img_t.numpy()
-# imgarr=np.swapaxes(imgarr,0,1)
-# imgarr=np.swapaxes(imgarr,1,2)
-# plt.imshow(np.interp(imgarr, (imgarr.min(), imgarr.max()), (0,1)))  # rescale img to (0, 1)
-plt.imshow(query_img)
-plt.axis('off')
-plt.title('Extraction')
+fig, ax = plt.subplots(1, n_neighbor+2,figsize=((15, 4)))
+fig.suptitle('5 Most similar images to query image',size='xx-large')
+
+ax[0].imshow(im.resize((96*3,96*3)))
+ax[0].axis('off')
+ax[0].set_title('Query')
+
+ax[1].imshow(query_img.resize((96*3,96*3)))
+ax[1].axis('off')
+ax[1].set_title('Extraction')
 for i in range(n_neighbor):
-    fig.add_subplot(1, n_neighbor+2, i+3)
+    
     imgarr = test_dataset[idx.ravel()[i]][0].numpy()
     imgarr=np.swapaxes(imgarr,0,1)
     imgarr=np.swapaxes(imgarr,1,2)
-    plt.imshow(np.interp(imgarr, (imgarr.min(), imgarr.max()), (0,1)))
-    plt.title(f'dist: {dists.ravel()[i]:.3}')
-    plt.axis('off')
+    ax[i+2].imshow(np.interp(imgarr, (imgarr.min(), imgarr.max()), (0,1)))
+    ax[i+2].set_title(f'dist: {dists.ravel()[i]:.3}')
+    ax[i+2].axis('off')
 
 plt.tight_layout()
 plt.savefig('nearest.png',dpi=200)
@@ -105,3 +100,5 @@ print('Outputted to nearest.png')
 # plt.savefig('image')
 # plt.show()
 
+
+# %%

@@ -13,6 +13,8 @@ it takes ~5 min to train on the gpu in colab. That is why I trained it there
 
 Original code
 https://github.com/facebookresearch/detectron2
+
+you need to have the model_final.pth downloaded and placed in the detectron2segment folder. it is too large for github. sorry. It is on the drive
 """
 #import torch, torchvision
 
@@ -41,10 +43,10 @@ setup_logger()
 
 def extract(im, threshold=0.82):
     """
-    you need to have the model_final.pth downloaded and placed in the detectron2segment folder. it is too large for github. sorry. It is on the drive
+    
     extracts All jewels from an image, crops the image to fit the jewel and makes all non-jewel elements in the image white.
 
-    >>> input a path to an image
+    >>> input a cv2 image (PIL does not seems to work)
     >>> returns the cropped image
     
     example use if called from root directory
@@ -120,5 +122,6 @@ def extract1jewel(im, threshold=0.82):
 
 
 if __name__ == "__main__":
-    crop_img = extract(os.path.join('detectron2segment','test.jpeg'), threshold=0.82)
+    im = cv2.imread(os.path.join('detectron2segment','test.jpeg'))
+    crop_img = extract(im, threshold=0.82)
     cv2.imwrite('extracted.png',crop_img)

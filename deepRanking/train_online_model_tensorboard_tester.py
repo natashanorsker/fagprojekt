@@ -1,8 +1,8 @@
-from dataset import BalancedBatchSampler, make_dataset
-from nets import EmbeddingNet
-from plots import extract_embeddings, plot_embeddings
-from losses import OnlineTripletLoss, AverageNonzeroTripletsMetric
-from deep_ranking_utils import AllTripletSelector, HardestNegativeTripletSelector, SemihardNegativeTripletSelector, \
+from .dataset import BalancedBatchSampler, make_dataset
+from .nets import EmbeddingNet
+from .plots import extract_embeddings, plot_embeddings
+from .losses import OnlineTripletLoss, AverageNonzeroTripletsMetric
+from .deep_ranking_utils import AllTripletSelector, HardestNegativeTripletSelector, SemihardNegativeTripletSelector, \
     RandomNegativeTripletSelector, fit
 from torch.optim import lr_scheduler
 from torch.utils.tensorboard import SummaryWriter  # to print to tensorboard
