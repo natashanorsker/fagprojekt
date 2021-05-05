@@ -71,7 +71,7 @@ def sort_by_category(catalog, category='item category', master_file_path='master
     not_found_products = []
 
     for product in catalog.keys():
-        cat = info_from_id(product, name_of_info=category, master_file_path=master_file_path)
+        cat = labels_from_ids(product, name_of_info=category, master_file_path=master_file_path)
         if cat is None:
             not_found_products += [product]
             pass
