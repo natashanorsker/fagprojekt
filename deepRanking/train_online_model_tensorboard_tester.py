@@ -2,12 +2,14 @@ from dataset import BalancedBatchSampler, make_dataset
 from nets import EmbeddingNet
 from plots import extract_embeddings, plot_embeddings
 from losses import OnlineTripletLoss, AverageNonzeroTripletsMetric
-from deep_ranking_utils_tensorboard_tester import AllTripletSelector, HardestNegativeTripletSelector, SemihardNegativeTripletSelector, \
+from deep_ranking_utils_tensorboard_tester import AllTripletSelector, HardestNegativeTripletSelector, \
+    SemihardNegativeTripletSelector, \
     RandomNegativeTripletSelector, Experiment
 from torch.optim import lr_scheduler
 from torch.utils.tensorboard import SummaryWriter  # to print to tensorboard
 from sklearn import preprocessing
 from utilities import dict_from_json
+from sklearn.model_selection import ParameterGrid
 import torch
 import torch.optim as optim  # For all Optimization algorithms, SGD, Adam, etc.
 from torch.utils.data import (
@@ -15,23 +17,36 @@ from torch.utils.data import (
 )  # Gives easier dataset managment and creates mini batches
 
 cuda = torch.cuda.is_available()
-BATCH_SIZE = 64
 
+# PARAMETERS TO SEARCH:
+param_grid = {'n_epochs': [2, 5, 10], 'lr': [0.0001]}
+
+# PARAMETERS THAT CAN BE MANUALLY ADJUSTED:
+# datasets:
+n_test_products = 100 # the amount of products that goes into the test dataset (sat very high for debugging)
+n_train_classes = 40  # the amount of products per batch in the balancedbatch sampler in the train dataloader
+n_test_classes = 80  # the amount of products per batch in the balancedbatch sampler in the test dataloader
+n_samples = 10
+
+# model training:
+margin = 1  # can't go into search?
+
+# MAKING THE DATASETS
 # fit the encoder:
 label_encoder = preprocessing.LabelEncoder()
 catalog = dict_from_json('../catalog.json')
 label_encoder.fit(list(catalog.keys()))
 
 # make the 'normal' datasets:
-train_dataset, test_dataset = make_dataset(label_encoder, n_test_products=100)
+train_dataset, test_dataset = make_dataset(label_encoder, n_test_products=n_test_products)
 
 # make the batch samplers:
-train_batch_sampler = BalancedBatchSampler(train_dataset, n_classes=10, n_samples=40)
-test_batch_sampler = BalancedBatchSampler(test_dataset, n_classes=10, n_samples=40)
+train_batch_sampler = BalancedBatchSampler(train_dataset, n_classes=n_train_classes, n_samples=n_samples)
+test_batch_sampler = BalancedBatchSampler(test_dataset, n_classes=n_test_classes, n_samples=n_samples)
 
 # make the dataloaders:
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=n_train_classes*n_samples, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=n_test_classes*n_samples, shuffle=False)
 
 # load the dataset:
 kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
@@ -39,52 +54,37 @@ online_train_loader = torch.utils.data.DataLoader(train_dataset, batch_sampler=t
 online_test_loader = torch.utils.data.DataLoader(test_dataset, batch_sampler=test_batch_sampler, **kwargs)
 
 
-margin = 10.
-embedding_net = EmbeddingNet()
-model = embedding_net
-if cuda:
-    model.cuda()
-loss_fn = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
-lr = 1e-3
-optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
-scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
-n_epochs = 1
-log_interval = 150
-
-#writer = SummaryWriter(f'runs/Fagprojekt/RNTS_{BATCH_SIZE}bs_{n_epochs}ep_{lr}_lr_{margin}m')
-
-
-#margins = [1, 10]
-#learning_rates = [1e-3]
-#n_epochs = [1]
-
-# fit the model
-#fit(online_train_loader, online_test_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[AverageNonzeroTripletsMetric()])
-
-#we need to get the loss for the specific fit or find a way to calculate accuracy
-
-# write to tensorboard:
 # run experiments:
 experiments = []
 
-#make the whole grid thing here
-run = Experiment(train_loader=online_train_loader, val_loader=online_test_loader, model=model, loss_fn=loss_fn, optimizer=optimizer, scheduler=scheduler, cuda=cuda, log_interval=log_interval,
-                 to_tensorboard=True, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0, margin=margin, lr=lr, n_epochs=n_epochs)
+for experiment in list(ParameterGrid(param_grid)):
+    # make the model:
+    embedding_net = EmbeddingNet()
+    model = embedding_net
+    loss_fn = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
+    optimizer = optim.Adam(model.parameters(), lr=experiment['lr'], weight_decay=1e-4)
+    scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
 
-experiments.append(run)
+    if cuda:
+        model.cuda()
 
+    # make the whole grid thing here
+    run = Experiment(train_loader=online_train_loader, val_loader=online_test_loader, model=model, loss_fn=loss_fn,
+                     optimizer=optimizer, scheduler=scheduler, cuda=cuda,
+                     to_tensorboard=True, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0, margin=margin, lr=experiment['lr'],
+                     n_epochs=experiment['n_epochs'])
+
+    experiments.append(run)
+
+
+# SAVING THE BEST MODEL:
 # save model:
 torch.save(model.state_dict(), 'online_model.pth')
 
 # load model:
-the_model = EmbeddingNet()
-the_model.load_state_dict(torch.load('online_model.pth'))
+#the_model = EmbeddingNet()
+#the_model.load_state_dict(torch.load('online_model.pth'))
 
 # extract embeddings and plot:
-val_embeddings_tl, val_labels_tl = extract_embeddings(test_loader, the_model)
-plot_embeddings(val_embeddings_tl, val_labels_tl, encoder=label_encoder)
-
-# train_embeddings_otl, train_labels_otl = extract_embeddings(train_loader, model)
-# plot_embeddings(train_embeddings_otl, train_labels_otl)
-# val_embeddings_otl, val_labels_otl = extract_embeddings(test_loader, model)
-# plot_embeddings(val_embeddings_otl, val_labels_otl)
+#val_embeddings_tl, val_labels_tl = extract_embeddings(test_loader, the_model)
+#plot_embeddings(val_embeddings_tl, val_labels_tl, encoder=label_encoder)
