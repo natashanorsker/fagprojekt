@@ -1,7 +1,7 @@
 import torchvision.utils
 
-from nets import EmbeddingNet
-from dataset import make_dataset
+from .nets import EmbeddingNet
+from .dataset import make_dataset
 from sklearn import preprocessing
 from utilities import dict_from_json
 from utilities import info_from_id
@@ -23,7 +23,7 @@ def plot_embeddings(embeddings, targets, encoder, xlim=None, ylim=None):
     targets = encoder.inverse_transform(targets)
     legend = []
     for i in set(targets):
-        category = info_from_id(i, master_file_path='../data_code/masterdata.csv')
+        category = info_from_id(i, master_file_path='data_code/masterdata.csv')
         inds = np.where(targets == i)[0]
         if category not in legend:
             legend += [category]

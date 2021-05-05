@@ -134,12 +134,12 @@ class TripletDataset(Dataset):
 def list_paths_labels():
     # first make a list of every possible image
     # get ids for the different classes [ring, earring, etc.]
-    catalog = json.loads(open('../catalog.json', "r").read())
+    catalog = json.loads(open('catalog.json', "r").read())
     # catalog = dict_from_json('../catalog.json')
     all_img_paths = []
     all_img_labels = []
     for label in catalog.keys():
-        new_imgs = list_pictures(os.path.join("../data", label))
+        new_imgs = list_pictures(os.path.join("data", label))
         all_img_paths += new_imgs
         all_img_labels += [label] * len(new_imgs)
 
