@@ -34,10 +34,11 @@ class Experiment:
         self.step = 0
 
         if self.to_tensorboard:
-            writer = SummaryWriter(
-                f'runs/{date.today().strftime("%b-%d-%Y")}/RNTS_{self.n_epochs}ep_{self.margin}m_{self.lr}lr')
+            #self.writer = SummaryWriter(
+            #   f'runs/{date.today().strftime("%b-%d-%Y")}/RNTS_{self.n_epochs}ep_{self.margin}m_{self.lr}lr')
+            self.writer = SummaryWriter()
             self.train_loss, self.val_loss = self.fit()
-            writer.close()
+            self.writer.close()
 
         else:
             self.train_loss, self.val_loss = self.fit()

@@ -4,7 +4,7 @@ from nets import EmbeddingNet
 from dataset import make_dataset
 from sklearn import preprocessing
 from utilities import dict_from_json
-from utilities import info_from_id
+from utilities import labels_from_ids
 import numpy as np
 import sys
 import torch
