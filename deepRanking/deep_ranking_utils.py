@@ -1,7 +1,16 @@
-
 from itertools import combinations
+from datetime import date
+
+import torchvision.utils
+from torch.utils.tensorboard import SummaryWriter  # to print to tensorboard
 import numpy as np
 import torch
+import datetime
+
+import tensorflow as tf
+import tensorboard as tb
+tf.io.gfile = tb.compat.tensorflow_stub.io.gfile # to fix a bug:
+
 cuda = torch.cuda.is_available()
 
 
@@ -12,127 +21,189 @@ def pdist(vectors):
     return distance_matrix
 
 
-def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
-        start_epoch=0):
+class Experiment:
+    def __init__(self, train_loader, val_loader, model, loss_fn, optimizer, scheduler, cuda, log_interval=50,
+                 to_tensorboard=True, metrics=[], start_epoch=0, margin=1, lr=0.01, n_epochs=10):
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.model = model
+        self.loss_fn = loss_fn
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.n_epochs = n_epochs
+        self.cuda = cuda
+        self.log_interval = log_interval
+        self.to_tensorboard = to_tensorboard
+        self.metrics = metrics
+        self.start_epoch = start_epoch
+        self.margin = margin
+        self.lr = lr
+        self.step = 0
+        self.val_loss = 0
+        self.train_loss = 0
 
-    """
-    Loaders, model, loss function and metrics should work together for a given task,
-    i.e. The model should be able to process data output of loaders,
-    loss function should process target output of loaders and outputs from the model
-    Examples: Classification: batch loader, classification model, NLL loss, accuracy metric
-    Siamese network: Siamese loader, siamese model, contrastive loss
-    Online triplet learning: batch loader, embedding model, online triplet loss
-    """
-    for epoch in range(0, start_epoch):
-        scheduler.step()
+        if self.to_tensorboard:
+            now = datetime.datetime.now()
+            self.writer = SummaryWriter(
+                    f'runs/{date.today().strftime("%b-%d-%Y")}/{self.n_epochs}ep_{self.margin}m_{self.lr}lr_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+            self.train_loss, self.val_loss = self.fit()
+            self.writer.close()
 
-    for epoch in range(start_epoch, n_epochs):
-        scheduler.step()
+        else:
+            self.train_loss, self.val_loss = self.fit()
 
-        # Train stage
-        train_loss, metrics = train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics)
+    def fit(self):
+        val_losses = []
+        training_losses = []
 
-        message = 'Epoch: {}/{}. Train set: Average loss: {:.4f}'.format(epoch + 1, n_epochs, train_loss)
-        for metric in metrics:
-            message += '\t{}: {}'.format(metric.name(), metric.value())
+        for epoch in range(0, self.start_epoch):
+            self.scheduler.step()
 
-        val_loss, metrics = test_epoch(val_loader, model, loss_fn, cuda, metrics)
-        val_loss /= len(val_loader)
+        for epoch in range(self.start_epoch, self.n_epochs):
+            self.scheduler.step()
 
+            train_loss, metrics = self.train_epoch()
+            training_losses += [train_loss]
 
-        message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, n_epochs,
-                                                                                 val_loss)
-        for metric in metrics:
-            message += '\t{}: {}'.format(metric.name(), metric.value())
+            message = 'Epoch: {}/{}. Train set: Average loss: {:.4f}'.format(epoch + 1, self.n_epochs, train_loss)
+            for metric in metrics:
+                message += '\t{}: {}'.format(metric.name(), metric.value())
 
-        print(message)
+            val_loss, metrics = self.test_epoch()
+            val_loss /= len(self.val_loader)
+            val_losses += [val_loss]
 
-
-def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics):
-    for metric in metrics:
-        metric.reset()
-
-    model.train()
-    losses = []
-    total_loss = 0
-
-    for batch_idx, (data, target) in enumerate(train_loader):
-        print('Batch [{}/{}]'.format(batch_idx, len(train_loader)))
-        target = target if len(target) > 0 else None
-        if not type(data) in (tuple, list):
-            data = (data,)
-        if cuda:
-            data = tuple(d.cuda() for d in data)
-            if target is not None:
-                target = target.cuda()
-
-        optimizer.zero_grad()
-        outputs = model(*data)
-
-        if type(outputs) not in (tuple, list):
-            outputs = (outputs,)
-
-        loss_inputs = outputs
-        if target is not None:
-            target = (target,)
-            loss_inputs += target
-
-        loss_outputs = loss_fn(*loss_inputs)
-        loss = loss_outputs[0] if type(loss_outputs) in (tuple, list) else loss_outputs
-        losses.append(loss.item())
-        total_loss += loss.item()
-        loss.backward()
-        optimizer.step()
-
-        for metric in metrics:
-            metric(outputs, target, loss_outputs)
-
-        if batch_idx % log_interval == 0:
-            message = 'Train: [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                batch_idx * len(data[0]), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), np.mean(losses))
+            message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, self.n_epochs,
+                                                                                     val_loss)
             for metric in metrics:
                 message += '\t{}: {}'.format(metric.name(), metric.value())
 
             print(message)
-            losses = []
 
-    total_loss /= (batch_idx + 1)
-    return total_loss, metrics
+            if self.to_tensorboard:
+                self.writer.add_hparams({'n_epochs': self.n_epochs, 'lr': self.lr, 'margin': self.margin},
+                                        {'Avr. Training Loss': sum(training_losses) / len(training_losses)})
 
+        return sum(training_losses) / len(training_losses), sum(val_losses) / len(val_losses)
 
-def test_epoch(val_loader, model, loss_fn, cuda, metrics):
-    with torch.no_grad():
-        for metric in metrics:
+    def train_epoch(self):
+        for metric in self.metrics:
             metric.reset()
-        model.eval()
-        val_loss = 0
-        for batch_idx, (data, target) in enumerate(val_loader):
+
+        self.model.train()
+        losses = []
+        total_loss = 0
+
+        for batch_idx, (data, target) in enumerate(self.train_loader):
+            print('Batch [{}/{}]'.format(batch_idx, len(self.train_loader)))
             target = target if len(target) > 0 else None
             if not type(data) in (tuple, list):
                 data = (data,)
-            if cuda:
+            if self.cuda:
                 data = tuple(d.cuda() for d in data)
                 if target is not None:
                     target = target.cuda()
 
-            outputs = model(*data)
+            self.optimizer.zero_grad()
+            outputs = self.model(*data)
 
             if type(outputs) not in (tuple, list):
                 outputs = (outputs,)
+
             loss_inputs = outputs
             if target is not None:
                 target = (target,)
                 loss_inputs += target
 
-            loss_outputs = loss_fn(*loss_inputs)
+            loss_outputs = self.loss_fn(*loss_inputs)
             loss = loss_outputs[0] if type(loss_outputs) in (tuple, list) else loss_outputs
-            val_loss += loss.item()
+            losses.append(loss.item())
+            total_loss += loss.item()
+            loss.backward()
+            triplet_ids = loss_outputs[2]
+            self.optimizer.step()
 
-            for metric in metrics:
+            if self.to_tensorboard:
+                if batch_idx == len(self.train_loader) - 1:
+                    # create image grid of input images from the batch
+                    img_grid = self.make_triplet_grid(triplet_ids, data)
+                    self.writer.add_image("Training input triplets", img_grid, global_step=batch_idx)
+
+
+                # add the weights from the last layer as a histogram:
+                self.writer.add_histogram("Weights from the last linear layer", self.model.fc[4].weight, global_step=self.step)
+                # add the training loss for the specific batch:
+                self.writer.add_scalar("Training loss", loss, global_step=self.step) # should be running loss or not?
+
+            for metric in self.metrics:
                 metric(outputs, target, loss_outputs)
 
-    return val_loss, metrics
+            if batch_idx % self.log_interval == 0:
+                message = 'Train: [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                    batch_idx * len(data[0]), len(self.train_loader.dataset),
+                    100. * batch_idx / len(self.train_loader), np.mean(losses))
+                for metric in self.metrics:
+                    message += '\t{}: {}'.format(metric.name(), metric.value())
+
+                print(message)
+                losses = []
+
+            self.step += 1
+
+        total_loss /= (batch_idx + 1)
+        return total_loss, self.metrics
+
+    def test_epoch(self):
+        # self.step = 0  # reset step (is used for plotting in tensorboard)?? should we do this?
+        with torch.no_grad():
+            for metric in self.metrics:
+                metric.reset()
+            self.model.eval()
+            val_loss = 0
+            for batch_idx, (data, target) in enumerate(self.val_loader):
+                target = target if len(target) > 0 else None
+                if not type(data) in (tuple, list):
+                    data = (data,)
+                if cuda:
+                    data = tuple(d.cuda() for d in data)
+                    if target is not None:
+                        target = target.cuda()
+
+                outputs = self.model(*data)
+
+                if type(outputs) not in (tuple, list):
+                    outputs = (outputs,)
+                loss_inputs = outputs
+                if target is not None:
+                    target = (target,)
+                    loss_inputs += target
+
+                loss_outputs = self.loss_fn(*loss_inputs)
+                loss = loss_outputs[0] if type(loss_outputs) in (tuple, list) else loss_outputs
+                val_loss += loss.item()
+
+                for metric in self.metrics:
+                    metric(outputs, target, loss_outputs)
+
+                if self.to_tensorboard:
+                    # make 3d plot of embeddings
+                    features = loss_inputs[0]  # the embeddings
+                    labels = loss_inputs[1].tolist()  # the product ids
+                    label_img = data[0] # the original images
+                    self.writer.add_embedding(features, metadata=labels, label_img=label_img, global_step=batch_idx)
+
+                self.step += 1
+
+        return val_loss, self.metrics
+
+    def make_triplet_grid(self, triplet_idxs, data):
+        # should make a grid of the different triplets used
+        triplet_grids = []
+        for triplet in triplet_idxs:
+            triplet_grids += [torchvision.utils.make_grid([data[0][triplet[0]], data[0][triplet[1]], data[0][triplet[2]]])]
+
+        final_grid = torchvision.utils.make_grid(triplet_grids)
+        return final_grid
 
 
 class TripletSelector:
@@ -225,7 +296,8 @@ class FunctionNegativeTripletSelector(TripletSelector):
 
             ap_distances = distance_matrix[anchor_positives[:, 0], anchor_positives[:, 1]]
             for anchor_positive, ap_distance in zip(anchor_positives, ap_distances):
-                loss_values = ap_distance - distance_matrix[torch.LongTensor(np.array([anchor_positive[0]])), torch.LongTensor(negative_indices)] + self.margin
+                loss_values = ap_distance - distance_matrix[
+                    torch.LongTensor(np.array([anchor_positive[0]])), torch.LongTensor(negative_indices)] + self.margin
                 loss_values = loss_values.data.cpu().numpy()
                 hard_negative = self.negative_selection_fn(loss_values)
                 if hard_negative is not None:
@@ -241,19 +313,17 @@ class FunctionNegativeTripletSelector(TripletSelector):
 
 
 def HardestNegativeTripletSelector(margin, cpu=False): return FunctionNegativeTripletSelector(margin=margin,
-                                                                                 negative_selection_fn=hardest_negative,
-                                                                                 cpu=cpu)
+                                                                                              negative_selection_fn=hardest_negative,
+                                                                                              cpu=cpu)
 
 
 def RandomNegativeTripletSelector(margin, cpu=False): return FunctionNegativeTripletSelector(margin=margin,
-                                                                                negative_selection_fn=random_hard_negative,
-                                                                                cpu=cpu)
+                                                                                             negative_selection_fn=random_hard_negative,
+                                                                                             cpu=cpu)
 
 
 def SemihardNegativeTripletSelector(margin, cpu=False): return FunctionNegativeTripletSelector(margin=margin,
-                                                                                  negative_selection_fn=lambda x: semihard_negative(x, margin),
-                                                                                  cpu=cpu)
-
-
-
-
+                                                                                               negative_selection_fn=lambda
+                                                                                                   x: semihard_negative(
+                                                                                                   x, margin),
+                                                                                               cpu=cpu)
