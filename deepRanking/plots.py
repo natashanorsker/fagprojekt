@@ -23,7 +23,7 @@ def plot_embeddings(embeddings, targets, encoder, xlim=None, ylim=None):
     targets = encoder.inverse_transform(targets)
     legend = []
     for i in set(targets):
-        category = labels_from_id(i, master_file_path='data_code/masterdata.csv')
+        category = labels_from_ids(i, master_file_path='data_code/masterdata.csv')
         inds = np.where(targets == i)[0]
         if category not in legend:
             legend += [category]
@@ -72,11 +72,11 @@ if __name__ == "__main__":
     # load the model
     # load model:
     the_model = EmbeddingNet()
-    the_model.load_state_dict(torch.load('online_model.pth'))
+    the_model.load_state_dict(torch.load('production_models/online_model_0.9776loss.pth'))
 
     # make the datasets:
-    trainset, testset = make_dataset(label_encoder, 15)
-    plot_loader = torch.utils.data.DataLoader(testset, batch_size=400, shuffle=False)
+    train_set, test_set = make_dataset(label_encoder, 15)
+    plot_loader = torch.utils.data.DataLoader(test_set, batch_size=400, shuffle=False)
 
 
     # extract embeddings and plot:
