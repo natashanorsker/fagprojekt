@@ -6,7 +6,7 @@ cuda = torch.cuda.is_available()
 class EmbeddingNet(nn.Module):
     # https://github.com/adambielski/siamese-triplet/blob/master/networks.py
     def __init__(self):
-        super().__init__()
+        super(EmbeddingNet, self).__init__()
         self.convnet = nn.Sequential(nn.Conv2d(3, 32, 5), nn.PReLU(),
                                      nn.MaxPool2d(2, stride=2),
                                      nn.MaxPool2d(2, stride=2),
@@ -17,7 +17,7 @@ class EmbeddingNet(nn.Module):
                                 nn.PReLU(),
                                 nn.Linear(256, 256),
                                 nn.PReLU(),
-                                nn.Linear(256, 2)
+                                nn.Linear(256, 10)
                                 )
 
     def forward(self, x):
