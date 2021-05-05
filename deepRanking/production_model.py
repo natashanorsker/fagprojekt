@@ -71,7 +71,7 @@ run = Experiment(train_loader=online_train_loader, val_loader=online_test_loader
 
 # SAVING THE MODEL:
 # save model:
-torch.save(run.model.state_dict(), 'production_models/online_model_{}loss.pth'.format(run.val_loss))
+torch.save(run.model.state_dict(), 'production_models/online_model_{}loss.pth'.format(round(run.val_loss, 4)))
 
 # load model:
 #the_model = EmbeddingNet()
