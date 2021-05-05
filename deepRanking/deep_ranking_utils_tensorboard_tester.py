@@ -1,8 +1,14 @@
 from itertools import combinations
 from datetime import date
+
+import torchvision.utils
 from torch.utils.tensorboard import SummaryWriter  # to print to tensorboard
 import numpy as np
 import torch
+
+import tensorflow as tf
+import tensorboard as tb
+tf.io.gfile = tb.compat.tensorflow_stub.io.gfile # to fix a bug:
 
 cuda = torch.cuda.is_available()
 
@@ -15,7 +21,7 @@ def pdist(vectors):
 
 
 class Experiment:
-    def __init__(self, train_loader, val_loader, model, loss_fn, optimizer, scheduler, cuda, log_interval=150,
+    def __init__(self, train_loader, val_loader, model, loss_fn, optimizer, scheduler, cuda, log_interval=50,
                  to_tensorboard=True, metrics=[], start_epoch=0, margin=1, lr=0.01, n_epochs=10):
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -34,10 +40,10 @@ class Experiment:
         self.step = 0
 
         if self.to_tensorboard:
-            writer = SummaryWriter(
-                f'runs/{date.today().strftime("%b-%d-%Y")}/RNTS_{self.n_epochs}ep_{self.margin}m_{self.lr}lr')
+            self.writer = SummaryWriter(
+                f'runs/{date.today().strftime("%b-%d-%Y")}/{self.n_epochs}ep_{self.margin}m_{self.lr}lr')
             self.train_loss, self.val_loss = self.fit()
-            writer.close()
+            self.writer.close()
 
         else:
             self.train_loss, self.val_loss = self.fit()
@@ -63,10 +69,6 @@ class Experiment:
             val_loss /= len(self.val_loader)
             val_losses += [val_loss]
 
-            if self.to_tensorboard:
-                self.writer.add_scalar("Training Loss", train_loss, global_step=self.step)
-                self.writer.add_scalar("Validation Loss", val_loss, global_step=self.step)
-
             message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, self.n_epochs,
                                                                                      val_loss)
             for metric in metrics:
@@ -74,10 +76,9 @@ class Experiment:
 
             print(message)
 
-        if self.to_tensorboard:
-            self.writer.add_hparams({'n_epochs': self.n_epochs, 'lr': self.lr, 'margin': self.margin},
-                                    {'Avr. Validation Loss': sum(val_losses) / len(val_losses),
-                                     'Avr. Training Loss': sum(training_losses) / len(training_losses)})
+            if self.to_tensorboard:
+                self.writer.add_hparams({'n_epochs': self.n_epochs, 'lr': self.lr, 'margin': self.margin},
+                                        {'Avr. Training Loss': sum(training_losses) / len(training_losses)})
 
         return sum(training_losses) / len(training_losses), sum(val_losses) / len(val_losses)
 
@@ -115,7 +116,20 @@ class Experiment:
             losses.append(loss.item())
             total_loss += loss.item()
             loss.backward()
+            triplet_ids = loss_outputs[2]
             self.optimizer.step()
+
+            if self.to_tensorboard:
+                if batch_idx == len(self.train_loader) - 1:
+                    # create image grid of input images from the batch
+                    img_grid = self.make_triplet_grid(triplet_ids, data)
+                    self.writer.add_image("Training input triplets", img_grid, global_step=batch_idx)
+
+
+                # add the weights from the last layer as a histogram:
+                self.writer.add_histogram("Weights from the last linear layer", self.model.fc[4].weight, global_step=self.step)
+                # add the training loss for the specific batch:
+                self.writer.add_scalar("Training loss", loss, global_step=self.step) # should be running loss or not?
 
             for metric in self.metrics:
                 metric(outputs, target, loss_outputs)
@@ -136,6 +150,7 @@ class Experiment:
         return total_loss, self.metrics
 
     def test_epoch(self):
+        # self.step = 0  # reset step (is used for plotting in tensorboard)?? should we do this?
         with torch.no_grad():
             for metric in self.metrics:
                 metric.reset()
@@ -166,9 +181,25 @@ class Experiment:
                 for metric in self.metrics:
                     metric(outputs, target, loss_outputs)
 
+                if self.to_tensorboard:
+                    # make 3d plot of embeddings
+                    features = loss_inputs[0]  # the embeddings
+                    labels = loss_inputs[1].tolist()  # the product ids
+                    label_img = data[0] # the original images
+                    self.writer.add_embedding(features, metadata=labels, label_img=label_img, global_step=batch_idx)
+
                 self.step += 1
 
         return val_loss, self.metrics
+
+    def make_triplet_grid(self, triplet_idxs, data):
+        # should make a grid of the different triplets used
+        triplet_grids = []
+        for triplet in triplet_idxs:
+            triplet_grids += [torchvision.utils.make_grid([data[0][triplet[0]], data[0][triplet[1]], data[0][triplet[2]]])]
+
+        final_grid = torchvision.utils.make_grid(triplet_grids)
+        return final_grid
 
 
 class TripletSelector:

@@ -17,7 +17,7 @@ class EmbeddingNet(nn.Module):
                                 nn.PReLU(),
                                 nn.Linear(256, 256),
                                 nn.PReLU(),
-                                nn.Linear(256, 2)
+                                nn.Linear(256, 10)
                                 )
 
     def forward(self, x):
