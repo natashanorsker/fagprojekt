@@ -22,8 +22,9 @@ def plot_embeddings(embeddings, targets, encoder, xlim=None, ylim=None):
     col_num = 0
     targets = encoder.inverse_transform(targets)
     legend = []
+
     for i in set(targets):
-        category = labels_from_id(i, master_file_path='data_code/masterdata.csv')
+        category = labels_from_ids(i, master_file_path='data_code/masterdata.csv')
         inds = np.where(targets == i)[0]
         if category not in legend:
             legend += [category]
