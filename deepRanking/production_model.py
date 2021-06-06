@@ -2,7 +2,7 @@ from dataset import BalancedBatchSampler, make_dataset
 from nets import EmbeddingNet
 from plots import extract_embeddings, plot_embeddings
 from losses import OnlineTripletLoss, AverageNonzeroTripletsMetric
-from deep_ranking_utils import AllTripletSelector, HardestNegativeTripletSelector, \
+from deep_ranking_utils import HardestNegativeTripletSelector, \
     SemihardNegativeTripletSelector, \
     RandomNegativeTripletSelector, Experiment
 from torch.optim import lr_scheduler
@@ -61,7 +61,7 @@ scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
 
 
 # make the whole grid thing here
-run = Experiment(train_loader=online_train_loader, val_loader=online_test_loader, model=model, loss_fn=loss_fn,
+run = Experiment(train_loader=online_train_loader, val_loader=online_test_loader, model=model, label_encoder=label_encoder, loss_fn=loss_fn,
                  optimizer=optimizer, scheduler=scheduler, cuda=cuda,
                  to_tensorboard=True, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0, margin=margin,
                  lr=lr,

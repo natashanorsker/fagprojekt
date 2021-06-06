@@ -39,10 +39,13 @@ def trim(im):
         return im.crop(bbox)
 
 
-def labels_from_ids(ids, master_file_path='../data_code/masterdata.csv'):
+def labels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_encoder=None):
     # should return the category in a string
     df = pd.read_csv(master_file_path, sep=';')
     df.columns = df.columns.str.lower()
+
+    if label_encoder:
+        ids = label_encoder.inverse_transform(ids)
 
     labels = []
     for id in ids:
@@ -56,6 +59,7 @@ def labels_from_ids(ids, master_file_path='../data_code/masterdata.csv'):
             print("Can't find info on product: {}".format(id))
             label = 'Set'
         labels.append(label)
+
     return labels
 
 
@@ -144,9 +148,26 @@ def occurrence_plot(catalog):
     plt.xticks(list(range(42))[::2])
     plt.show()
 
+def number_per_category_plot(catalog):
+    all_products = list(catalog.keys())
+    all_cats = labels_from_ids(all_products, 'data_code/masterdata.csv')
+
+    cats, counts = np.unique(all_cats, return_counts=True)
+
+
+    sns.set_style('whitegrid')
+    sns.barplot(x=list(range(len(cats))), y=counts)
+    plt.xlabel('Categories')
+    plt.ylabel('Number of products')
+    plt.xticks(list(range(len(cats))), list(cats))
+    plt.show()
+
+
+
 
 if __name__ == "__main__":
     catalog = dict_from_json()
     # sorted, not_found = sort_by_category(catalog)
     occurrence_plot(catalog)
+    number_per_category_plot(catalog)
     pass

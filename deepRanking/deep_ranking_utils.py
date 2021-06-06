@@ -1,15 +1,15 @@
+from utilities import labels_from_ids
 from itertools import combinations
 from datetime import date
-
 import torchvision.utils
 from torch.utils.tensorboard import SummaryWriter  # to print to tensorboard
 import numpy as np
 import torch
 import datetime
-
 import tensorflow as tf
 import tensorboard as tb
-tf.io.gfile = tb.compat.tensorflow_stub.io.gfile # to fix a bug:
+
+tf.io.gfile = tb.compat.tensorflow_stub.io.gfile  # to fix a bug:
 
 cuda = torch.cuda.is_available()
 
@@ -22,11 +22,12 @@ def pdist(vectors):
 
 
 class Experiment:
-    def __init__(self, train_loader, val_loader, model, loss_fn, optimizer, scheduler, cuda, log_interval=50,
+    def __init__(self, train_loader, val_loader, model, label_encoder, loss_fn, optimizer, scheduler, cuda, log_interval=50,
                  to_tensorboard=True, metrics=[], start_epoch=0, margin=1, lr=0.01, n_epochs=10):
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.model = model
+        self.label_encoder = label_encoder
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.scheduler = scheduler
@@ -42,10 +43,12 @@ class Experiment:
         self.val_loss = 0
         self.train_loss = 0
 
+
         if self.to_tensorboard:
             now = datetime.datetime.now()
             self.writer = SummaryWriter(
-                    f'runs/{date.today().strftime("%b-%d-%Y")}/{self.n_epochs}ep_{self.margin}m_{self.lr}lr_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+                f'runs/{date.today().strftime("%b-%d-%Y")}/{self.n_epochs}ep_{self.margin}m_{self.lr}lr_' + datetime.datetime.now().strftime(
+                    "%Y%m%d-%H%M%S"))
             self.train_loss, self.val_loss = self.fit()
             self.writer.close()
 
@@ -126,14 +129,14 @@ class Experiment:
             if self.to_tensorboard:
                 if batch_idx == len(self.train_loader) - 1:
                     # create image grid of input images from the batch
-                    img_grid = self.make_triplet_grid(triplet_ids, data)
+                    img_grid = make_triplet_grid(triplet_ids, data)
                     self.writer.add_image("Training input triplets", img_grid, global_step=batch_idx)
 
-
                 # add the weights from the last layer as a histogram:
-                self.writer.add_histogram("Weights from the last linear layer", self.model.fc[4].weight, global_step=self.step)
+                self.writer.add_histogram("Weights from the last linear layer", self.model.fc[4].weight,
+                                          global_step=self.step)
                 # add the training loss for the specific batch:
-                self.writer.add_scalar("Training loss", loss, global_step=self.step) # should be running loss or not?
+                self.writer.add_scalar("Training loss", loss, global_step=self.step)  # should be running loss or not?
 
             for metric in self.metrics:
                 metric(outputs, target, loss_outputs)
@@ -189,62 +192,22 @@ class Experiment:
                     # make 3d plot of embeddings
                     features = loss_inputs[0]  # the embeddings
                     labels = loss_inputs[1].tolist()  # the product ids
-                    label_img = data[0] # the original images
+                    label_img = data[0]  # the original images
                     self.writer.add_embedding(features, metadata=labels, label_img=label_img, global_step=batch_idx)
 
                 self.step += 1
 
         return val_loss, self.metrics
 
-    def make_triplet_grid(self, triplet_idxs, data):
-        # should make a grid of the different triplets used
-        triplet_grids = []
-        for triplet in triplet_idxs:
-            triplet_grids += [torchvision.utils.make_grid([data[0][triplet[0]], data[0][triplet[1]], data[0][triplet[2]]])]
 
-        final_grid = torchvision.utils.make_grid(triplet_grids)
-        return final_grid
+def make_triplet_grid(triplet_idxs, data):
+    # should make a grid of the different triplets used
+    triplet_grids = []
+    for triplet in triplet_idxs:
+        triplet_grids += [torchvision.utils.make_grid([data[0][triplet[0]], data[0][triplet[1]], data[0][triplet[2]]])]
 
-
-class TripletSelector:
-    """
-    Implementation should return indices of anchors, positive and negative samples
-    return np array of shape [N_triplets x 3]
-    """
-
-    def __init__(self):
-        pass
-
-    def get_triplets(self, embeddings, labels):
-        raise NotImplementedError
-
-
-class AllTripletSelector(TripletSelector):
-    """
-    Returns all possible triplets
-    May be impractical in most cases
-    """
-
-    def __init__(self):
-        super(AllTripletSelector, self).__init__()
-
-    def get_triplets(self, embeddings, labels):
-        labels = labels.cpu().data.numpy()
-        triplets = []
-        for label in set(labels):
-            label_mask = (labels == label)
-            label_indices = np.where(label_mask)[0]
-            if len(label_indices) < 2:
-                continue
-            negative_indices = np.where(np.logical_not(label_mask))[0]
-            anchor_positives = list(combinations(label_indices, 2))  # All anchor-positive pairs
-
-            # Add all negatives for all positive pairs
-            temp_triplets = [[anchor_positive[0], anchor_positive[1], neg_ind] for anchor_positive in anchor_positives
-                             for neg_ind in negative_indices]
-            triplets += temp_triplets
-
-        return torch.LongTensor(np.array(triplets))
+    final_grid = torchvision.utils.make_grid(triplet_grids)
+    return final_grid
 
 
 def hardest_negative(loss_values):
@@ -262,7 +225,7 @@ def semihard_negative(loss_values, margin):
     return np.random.choice(semihard_negatives) if len(semihard_negatives) > 0 else None
 
 
-class FunctionNegativeTripletSelector(TripletSelector):
+class FunctionNegativeTripletSelector:
     """
     For each positive pair, takes the hardest negative sample (with the greatest triplet loss value) to create a triplet
     Margin should match the margin used in triplet loss.
@@ -327,3 +290,109 @@ def SemihardNegativeTripletSelector(margin, cpu=False): return FunctionNegativeT
                                                                                                    x: semihard_negative(
                                                                                                    x, margin),
                                                                                                cpu=cpu)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class FunctionNegativeQuadletSelector:
+    """
+    For each positive pair, takes the hardest negative sample (with the greatest triplet loss value) to create a triplet
+    Margin should match the margin used in triplet loss.
+    negative_selection_fn should take array of loss_values for a given anchor-positive pair and all negative samples
+    and return a negative index for that pair
+    """
+
+    def __init__(self, margin, negative_selection_fn, label_encoder, cpu=True):
+        super(FunctionNegativeQuadletSelector, self).__init__()
+        self.cpu = cpu
+        self.margin = margin
+        self.negative_selection_fn = negative_selection_fn
+        self.label_encoder = label_encoder
+
+    def get_triplets(self, embeddings, labels):
+        if self.cpu:
+            embeddings = embeddings.cpu()
+        distance_matrix = pdist(embeddings)
+        distance_matrix = distance_matrix.cpu()
+
+        labels = labels.cpu().data.numpy()
+        class_labels = np.array(labels_from_ids(labels, label_encoder=self.label_encoder))
+
+        label_to_class_dict = dict(zip(labels, class_labels))
+
+        quadlets = []
+
+        for label in set(labels):
+
+            class_label = label_to_class_dict[label]
+            class_label_mask = (class_labels == class_label)
+            class_label_indices = np.where(class_label_mask)[0]
+
+            label_mask = (labels == label)
+            label_indices = np.where(label_mask)[0]
+
+            if len(label_indices) < 2:
+                continue
+
+            semi_indices == np.where((class_label_mask==True) & (label_mask==False))[0]
+            negative_indices = np.where((class_label_mask==False) & (label_mask==False))[0]
+            anchor_positives = list(combinations(label_indices, 2))  # All anchor-positive pairs
+            anchor_positives = np.array(anchor_positives)
+
+            ap_distances = distance_matrix[anchor_positives[:, 0], anchor_positives[:, 1]]
+            for anchor_positive, ap_distance in zip(anchor_positives, ap_distances):
+                loss_values = ap_distance - distance_matrix[
+                    torch.LongTensor(np.array([anchor_positive[0]])), torch.LongTensor(negative_indices)] + self.margin
+                loss_values = loss_values.data.cpu().numpy()
+                hard_negative = self.negative_selection_fn(loss_values)
+                if hard_negative is not None:
+                    hard_negative = negative_indices[hard_negative]
+                    quadlets.append([anchor_positive[0], anchor_positive[1], hard_negative])
+
+        if len(quadlets) == 0:
+            quadlets.append([anchor_positive[0], anchor_positive[1], negative_indices[0]])
+
+        quadlets = np.array(quadlets)
+
+        return torch.LongTensor(quadlets)
+
+
+
+def HardestNegativeQuadletSelector(margin, label_encoder, cpu=False): return FunctionNegativeQuadletSelector(margin=margin,
+                                                                                              negative_selection_fn=hardest_negative,
+                                                                                              cpu=cpu, label_encoder=label_encoder)
+
+
+def RandomNegativeQuadletSelector(margin, label_encoder, cpu=False): return FunctionNegativeQuadletSelector(margin=margin,
+                                                                                             negative_selection_fn=random_hard_negative,
+                                                                                             cpu=cpu, label_encoder=label_encoder)
+
+
+def SemihardNegativeQuadletSelector(margin, label_encoder, cpu=False): return FunctionNegativeQuadletSelector(margin=margin,
+                                                                                               negative_selection_fn=lambda
+                                                                                                   x: semihard_negative(
+                                                                                                   x, margin),
+                                                                                               cpu=cpu, label_encoder=label_encoder)
+
+
+
+
+
+
+
