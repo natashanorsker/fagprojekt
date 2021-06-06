@@ -31,13 +31,9 @@ n_samples = 10
 margin = 1  # can't go into search?
 
 # MAKING THE DATASETS
-# fit the encoder:
-label_encoder = preprocessing.LabelEncoder()
-catalog = dict_from_json('../catalog.json')
-label_encoder.fit(list(catalog.keys()))
 
 # make the 'normal' datasets:
-train_dataset, test_dataset = make_dataset(label_encoder, n_test_products=n_test_products)
+train_dataset, test_dataset = make_dataset(n_test_products=n_test_products)
 
 # make the batch samplers:
 train_batch_sampler = BalancedBatchSampler(train_dataset, n_classes=n_train_classes, n_samples=n_samples)

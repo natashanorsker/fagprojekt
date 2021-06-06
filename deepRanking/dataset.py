@@ -162,12 +162,13 @@ def make_dataset(label_encoder, test_size=0.13, random_state=42):
     return training_set, validation_set
 """
 
-def make_dataset(label_encoder, n_test_products):
-    all_img_paths, all_img_labels = list_paths_labels()
-    labels = label_encoder.transform(all_img_labels)
+def make_dataset(n_test_products):
+    all_img_paths, labels = list_paths_labels()
+    labels = np.array(labels)
 
     labels_set = list(set(labels))
-    label_to_indices = {label: np.where(labels == label)[0] for label in labels_set}
+
+    label_to_indices = {label: np.array([i for i, x in enumerate(labels) if x == label]) for label in labels_set}
 
     classes = np.random.choice(labels_set, n_test_products, replace=False)
 
@@ -191,19 +192,6 @@ def make_dataset(label_encoder, n_test_products):
 
     y_test = np.array(y_test)
     y_train = np.array(y_train)
-
-    #maybe delete later idk:
-    """
-    X_train = []
-    y_train = []
-    for class_ in classes:
-        indices = label_to_indices[class_]
-        X_train += [all_img_paths[idx] for idx in indices]
-        y_train += [labels[idx] for idx in indices]
-    y_train = np.array(y_train)
-    plot_dataset = Dataset(X_train, y_train)
-    ##
-    """
 
     training_set = Dataset(X_train, y_train)
     validation_set = Dataset(X_test, y_test)
