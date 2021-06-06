@@ -9,11 +9,13 @@ import torch
 from sklearn import preprocessing
 from utilities import dict_from_json
 cuda = torch.cuda.is_available()
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print("Using {} device".format(device))
 
 
 #fit the encoder:
 label_encoder = preprocessing.LabelEncoder()
-catalog = dict_from_json('../catalog.json')
+catalog = dict_from_json('catalog.json')
 label_encoder.fit(list(catalog.keys()))
 
 #make the 'normal' datasets:
@@ -24,8 +26,8 @@ train_batch_sampler = BalancedBatchSampler(train_dataset, n_classes=100, n_sampl
 test_batch_sampler = BalancedBatchSampler(test_dataset, n_classes=20, n_samples=40)
 
 #make the dataloaders:
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=500, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=500, shuffle=False)
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 #load the dataset:
 kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
