@@ -22,9 +22,8 @@ def list_pictures(directory, ext='jpg|jpeg|bmp|png|ppm'):
 
 def dict_from_json(path="catalog.json"):
     # open the product catalog:
-    a_file = open(path, "r")
-    catalog = json.loads(a_file.read())
-    a_file.close()
+    with open(path, "r") as a_file:
+        catalog = json.loads(a_file.read())
     return catalog
 
 

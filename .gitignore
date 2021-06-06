@@ -5,8 +5,6 @@ data_small/
 .idea/
 .vscode/
 __pycache__/
-detectron2segment/model_final.pth
 /data_code/master_data.xlsx
 /data_code/masterdata.csv
 *.ipynb_checkpoints
-foo.csv
