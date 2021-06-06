@@ -19,7 +19,7 @@ from torch.utils.data import (
 cuda = torch.cuda.is_available()
 
 # PARAMETERS TO SEARCH:
-param_grid = {'n_epochs': [1], 'lr': [0.0001, 0.01]}
+param_grid = {'n_epochs': [1], 'lr': [0.0001]}
 
 # PARAMETERS THAT CAN BE MANUALLY ADJUSTED:
 # datasets:

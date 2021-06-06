@@ -64,8 +64,10 @@ def labels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_e
     return labels
 
 
-def sort_by_category(catalog, category='item category', master_file_path='masterdata.csv', save=True):
+def sort_by_category(catalog, category='item category', master_file_path='data_code/masterdata.csv', save=True):
     # read the master file:
+
+
     df = pd.read_csv(master_file_path, sep=';')
     df.columns = df.columns.str.lower()
     category = category.lower()
@@ -168,7 +170,7 @@ def number_per_category_plot(catalog):
 
 if __name__ == "__main__":
     catalog = dict_from_json()
-    # sorted, not_found = sort_by_category(catalog)
-    occurrence_plot(catalog)
+   # sorted, not_found = sort_by_category(catalog)
+    #occurrence_plot(catalog)
     number_per_category_plot(catalog)
     pass
