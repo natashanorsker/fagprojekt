@@ -17,7 +17,7 @@ from utilities import dict_from_json
 #%% Step 1 get embeddings for corpus
 print('Getting embeddings')
 model = EmbeddingNet()
-model.load_state_dict(torch.load('deepRanking/online_model.pth'))
+model.load_state_dict(torch.load('deepRanking/models/online_model_0.9776loss.pth'))
 
 label_encoder = preprocessing.LabelEncoder()
 catalog = dict_from_json('catalog.json')
@@ -36,7 +36,7 @@ val_embeddings_tl, val_labels_tl = extract_embeddings(test_loader, model)
 
 #%% Step 2 load an image and crop it out
 print('Extracting jewellery')
-impath = 'Figures/test3.jpeg'
+impath = 'Figures/test5.jpeg'
 im = cv2.imread(impath)
 
 if im is None:
@@ -48,11 +48,18 @@ if im is None:
         impath = impath[:-4]+'jpg'
         im = cv2.imread(impath)
 
-crop_img = detectron2segment.inference.extractjewel(im)
+# crop_img = detectron2segment.inference.extractjewel(im)
 # stupid cv2 nonsense they use BGR and not RGB like wtf? fixes image getting blue
-crop_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB) 
+crop_img = cv2.cvtColor(im, cv2.COLOR_BGR2RGB) 
 query_img = Image.fromarray(crop_img)
 im = Image.open(impath)
+# testing
+testim = test_dataset[80][0].numpy()    
+testim = np.asarray(np.interp(testim, (0, 1), (0,255)),dtype=np.uint8)
+testim=np.swapaxes(testim,0,1)
+testim=np.swapaxes(testim,1,2)
+im = Image.fromarray(testim)
+query_img = Image.fromarray(testim)
 #%% Step 3 get embeddings for new image
 print('Searching for similar images')
 model.eval()   # apparently does more than to print out the model. I think it freezes som weights or something
@@ -94,8 +101,8 @@ ax[1].imshow(query_img.resize((96*3,96*3)))
 ax[1].axis('off')
 ax[1].set_title('Extraction')
 for i in range(n_neighbor):
-    
-    imgarr = test_dataset[idx.ravel()[i]][0].numpy()
+
+    imgarr = test_dataset[idx.ravel()[i]][0].numpy() # ikke korrekt?
     imgarr=np.swapaxes(imgarr,0,1)
     imgarr=np.swapaxes(imgarr,1,2)
     rescaled_im = np.interp(imgarr, (imgarr.min(), imgarr.max()), (0,1))
@@ -104,7 +111,7 @@ for i in range(n_neighbor):
     ax[i+2].axis('off')
 
 plt.tight_layout()
-# plt.savefig('nearest.png',dpi=200)
+plt.savefig('nearest.png',dpi=200)
 
 print('Outputted to nearest.png')
 

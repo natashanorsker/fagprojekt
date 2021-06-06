@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-from utilities import list_pictures
+from utilities import list_pictures, labels_from_ids
 import json
 import os
 import torch
@@ -22,11 +22,27 @@ random.seed(420)
 seed(420)
 
 
+def list_paths_labels():
+    # first make a list of every possible image
+    # get ids for the different classes [ring, earring, etc.]
+    catalog = json.loads(open('../catalog.json', "r").read())
+    # catalog = dict_from_json('../catalog.json')
+    all_img_paths = []
+    all_img_labels = []
+    for label in catalog.keys():
+        new_imgs = list_pictures(os.path.join("../data", label))
+        all_img_paths += new_imgs
+        all_img_labels += [label] * len(new_imgs)
+
+    return all_img_paths, all_img_labels
+
+
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, list_IDs, labels):
+    def __init__(self, list_IDs, labels, label_encoder):
         'Initialization'
         self.labels = labels
         self.list_IDs = list_IDs
+        self.label_encoder = label_encoder
 
     def __len__(self):
         'Denotes the total number of samples'
@@ -50,125 +66,12 @@ class Dataset(torch.utils.data.Dataset):
         return X, y
 
 
-class TripletDataset(Dataset):
-    """
-    Train: For each sample (anchor) randomly chooses a positive and negative samples
-    Test: Creates fixed triplets for testing
-    """
-
-    def __init__(self, dataset, train=True):
-        self.dataset = dataset
-        self.train = train
-
-        self.labels = self.dataset.labels
-        self.data = self.dataset.list_IDs
-        # generate fixed triplets
-        self.labels_set = set(self.labels)
-        self.label_to_indices = {label: np.where(np.array(self.labels) == label)[0]
-                                 for label in self.labels_set}
-
-        if not self.train:
-            random_state = np.random.RandomState(29)
-
-            triplets = [[i,
-                         random_state.choice(self.label_to_indices[self.labels[i].item()]),
-                         random_state.choice(self.label_to_indices[
-                                                 np.random.choice(
-                                                     list(self.labels_set - set([self.labels[i].item()]))
-                                                 )
-                                             ])
-                         ]
-                        for i in range(len(self.data))]
-            self.test_triplets = triplets
-
-    def __getitem__(self, index):
-
-        if self.train:
-            load_img1 = Image.open(self.data[index])
-            img1 = TF.to_tensor(load_img1)
-            anchor_label = self.labels[index].item()
-            positive_index = index
-            while positive_index == index:
-                positive_index = np.random.choice(self.label_to_indices[anchor_label])
-            negative_label = np.random.choice(list(self.labels_set - set([anchor_label])))
-            negative_index = np.random.choice(self.label_to_indices[negative_label])
-
-            load_img2 = Image.open(self.data[positive_index])
-            img2 = TF.to_tensor(load_img2)
-
-            load_img3 = Image.open(self.data[negative_index])
-            img3 = TF.to_tensor(load_img3)
-
-            if not all(len(img) == 3 for img in [img1, img2, img3]):
-                load_img1 = Image.open(self.data[index]).convert('RGB')
-                img1 = TF.to_tensor(load_img1)
-
-                load_img2 = Image.open(self.data[positive_index]).convert('RGB')
-                img2 = TF.to_tensor(load_img2)
-
-                load_img3 = Image.open(self.data[negative_index]).convert('RGB')
-                img3 = TF.to_tensor(load_img3)
-
-        else:
-            load_img1 = Image.open(self.data[self.test_triplets[index][0]])
-            img1 = TF.to_tensor(load_img1)
-            load_img2 = Image.open(self.data[self.test_triplets[index][1]])
-            img2 = TF.to_tensor(load_img2)
-            load_img3 = Image.open(self.data[self.test_triplets[index][2]])
-            img3 = TF.to_tensor(load_img3)
-
-            if not all(len(img) == 3 for img in [img1, img2, img3]):
-                load_img1 = Image.open(self.data[self.test_triplets[index][0]]).convert('RGB')
-                img1 = TF.to_tensor(load_img1)
-                load_img2 = Image.open(self.data[self.test_triplets[index][1]]).convert('RGB')
-                img2 = TF.to_tensor(load_img2)
-                load_img3 = Image.open(self.data[self.test_triplets[index][2]]).convert('RGB')
-                img3 = TF.to_tensor(load_img3)
-
-        return (img1, img2, img3), []
-
-    def __len__(self):
-        return len(self.dataset)
-
-
-def list_paths_labels():
-    # first make a list of every possible image
-    # get ids for the different classes [ring, earring, etc.]
-    catalog = json.loads(open('../catalog.json', "r").read())
-    # catalog = dict_from_json('../catalog.json')
-    all_img_paths = []
-    all_img_labels = []
-    for label in catalog.keys():
-        new_imgs = list_pictures(os.path.join("../data", label))
-        all_img_paths += new_imgs
-        all_img_labels += [label] * len(new_imgs)
-
-    return all_img_paths, all_img_labels
-
-"""
-def make_dataset(label_encoder, test_size=0.13, random_state=42):
+def make_dataset(label_encoder, n_test_products):
     all_img_paths, all_img_labels = list_paths_labels()
-    # encode the labels into integers
     labels = label_encoder.transform(all_img_labels)
 
-    # get partition of train and testset:
-    X_train, X_test, y_train, y_test = train_test_split(all_img_paths, labels, test_size=test_size,
-                                                        random_state=random_state)
-
-    # make 'generic' dataset
-    training_set = Dataset(X_train, y_train)
-    validation_set = Dataset(X_test, y_test)
-
-    return training_set, validation_set
-"""
-
-def make_dataset(n_test_products):
-    all_img_paths, labels = list_paths_labels()
-    labels = np.array(labels)
-
     labels_set = list(set(labels))
-
-    label_to_indices = {label: np.array([i for i, x in enumerate(labels) if x == label]) for label in labels_set}
+    label_to_indices = {label: np.where(labels == label)[0] for label in labels_set}
 
     classes = np.random.choice(labels_set, n_test_products, replace=False)
 
@@ -193,8 +96,8 @@ def make_dataset(n_test_products):
     y_test = np.array(y_test)
     y_train = np.array(y_train)
 
-    training_set = Dataset(X_train, y_train)
-    validation_set = Dataset(X_test, y_test)
+    training_set = Dataset(X_train, y_train, label_encoder)
+    validation_set = Dataset(X_test, y_test, label_encoder)
 
     return training_set, validation_set
 

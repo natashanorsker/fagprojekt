@@ -14,14 +14,14 @@ import matplotlib.cm as cm
 cuda = torch.cuda.is_available()
 
 
-def plot_embeddings(embeddings, targets, xlim=None, ylim=None):
+def plot_embeddings(embeddings, targets, encoder, xlim=None, ylim=None):
     plt.figure(figsize=(10, 10))
     colors = cm.rainbow(np.linspace(0, 1, len(set(targets))))
     markers = {'Bracelets': '*', 'Charms': '.', 'Jewellery spare parts': 'x', 'Necklaces & Pendants': '3', 'Rings': 's',
                'Earrings': 'D', 'Misc': 'p', 'Set': '+'}
     col_num = 0
+    targets = encoder.inverse_transform(targets)
     legend = []
-
     for i in set(targets):
         category = labels_from_ids(i, master_file_path='data_code/masterdata.csv')
         inds = np.where(targets == i)[0]
@@ -51,7 +51,7 @@ def plot_embeddings(embeddings, targets, xlim=None, ylim=None):
 def extract_embeddings(dataloader, model):
     with torch.no_grad():
         model.eval()
-        embeddings = np.zeros((len(dataloader.dataset), model.fc[-1].out_features))
+        embeddings = np.zeros((len(dataloader.dataset), 10))
         labels = np.zeros(len(dataloader.dataset))
         k = 0
         for images, target in dataloader:
@@ -65,16 +65,20 @@ def extract_embeddings(dataloader, model):
 
 
 if __name__ == "__main__":
+    label_encoder = preprocessing.LabelEncoder()
+    catalog = dict_from_json('../catalog.json')
+    label_encoder.fit(list(catalog.keys()))
+
     # load the model
     # load model:
     the_model = EmbeddingNet()
-    the_model.load_state_dict(torch.load('production_models/online_model_0.9776loss.pth'))
+    the_model.load_state_dict(torch.load('models/online_model_0.9776loss.pth'))
 
     # make the datasets:
-    train_set, test_set = make_dataset(15)
+    train_set, test_set = make_dataset(label_encoder, 15)
     plot_loader = torch.utils.data.DataLoader(test_set, batch_size=400, shuffle=False)
 
 
     # extract embeddings and plot:
     val_embeddings_tl, val_labels_tl = extract_embeddings(plot_loader, the_model)
-    plot_embeddings(val_embeddings_tl, val_labels_tl)
+    plot_embeddings(val_embeddings_tl, val_labels_tl, encoder=label_encoder)
