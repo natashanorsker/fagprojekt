@@ -51,7 +51,7 @@ def plot_embeddings(embeddings, targets, encoder, xlim=None, ylim=None):
 def extract_embeddings(dataloader, model):
     with torch.no_grad():
         model.eval()
-        embeddings = np.zeros((len(dataloader.dataset), 2))
+        embeddings = np.zeros((len(dataloader.dataset), 10))
         labels = np.zeros(len(dataloader.dataset))
         k = 0
         for images, target in dataloader:
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     # load the model
     # load model:
     the_model = EmbeddingNet()
-    the_model.load_state_dict(torch.load('production_models/online_model_0.9776loss.pth'))
+    the_model.load_state_dict(torch.load('models/online_model_0.9776loss.pth'))
 
     # make the datasets:
     train_set, test_set = make_dataset(label_encoder, 15)
