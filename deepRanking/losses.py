@@ -5,23 +5,6 @@ import torch
 cuda = torch.cuda.is_available()
 
 
-class TripletLoss(nn.Module):
-    """
-    Triplet loss
-    Takes embeddings of an anchor sample, a positive sample and a negative sample
-    """
-
-    def __init__(self, margin):
-        super(TripletLoss, self).__init__()
-        self.margin = margin
-
-    def forward(self, anchor, positive, negative, size_average=True):
-        distance_positive = (anchor - positive).pow(2).sum(1)  # .pow(.5)
-        distance_negative = (anchor - negative).pow(2).sum(1)  # .pow(.5)
-        losses = F.relu(distance_positive - distance_negative + self.margin)
-        return losses.mean() if size_average else losses.sum()
-
-
 class OnlineTripletLoss(nn.Module):
     """
     Online Triplets loss
@@ -49,50 +32,7 @@ class OnlineTripletLoss(nn.Module):
         return losses.mean(), len(triplets), triplets
 
 
-class Metric:
-    def __init__(self):
-        pass
-
-    def __call__(self, outputs, target, loss):
-        raise NotImplementedError
-
-    def reset(self):
-        raise NotImplementedError
-
-    def value(self):
-        raise NotImplementedError
-
-    def name(self):
-        raise NotImplementedError
-
-
-class AccumulatedAccuracyMetric(Metric):
-    """
-    Works with classification model
-    """
-
-    def __init__(self):
-        self.correct = 0
-        self.total = 0
-
-    def __call__(self, outputs, target, loss):
-        pred = outputs[0].data.max(1, keepdim=True)[1]
-        self.correct += pred.eq(target[0].data.view_as(pred)).cpu().sum()
-        self.total += target[0].size(0)
-        return self.value()
-
-    def reset(self):
-        self.correct = 0
-        self.total = 0
-
-    def value(self):
-        return 100 * float(self.correct) / self.total
-
-    def name(self):
-        return 'Accuracy'
-
-
-class AverageNonzeroTripletsMetric(Metric):
+class AverageNonzeroTripletsMetric:
     '''
     Counts average number of nonzero triplets found in minibatches
     '''
@@ -112,3 +52,31 @@ class AverageNonzeroTripletsMetric(Metric):
 
     def name(self):
         return 'Average nonzero triplets'
+
+
+class OnlineQuadletLoss(nn.Module):
+    """
+    Online Quadlets loss
+    Takes a batch of embeddings and corresponding labels.
+    Triplets are generated using triplet_selector object that take embeddings and targets and return indices of
+    triplets
+    """
+
+    def __init__(self, margin, quadlet_selector):
+        super(OnlineQuadletLoss, self).__init__()
+        self.margin = margin
+        self.quadlet_selector = quadlet_selector
+
+    def forward(self, embeddings, target):
+
+        quadlets = self.quadlet_selector.get_quadlets(embeddings, target)
+
+        if embeddings.is_cuda:
+            quadlets = quadlets.cuda()
+
+        ap_distances = (embeddings[triplets[:, 0]] - embeddings[triplets[:, 1]]).pow(2).sum(1)  # .pow(.5)
+        #as_distances = ..
+        an_distances = (embeddings[triplets[:, 0]] - embeddings[triplets[:, 2]]).pow(2).sum(1)  # .pow(.5)
+        losses = F.relu(ap_distances - an_distances + self.margin)
+
+        return losses.mean(), len(triplets), triplets

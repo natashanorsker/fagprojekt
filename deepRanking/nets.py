@@ -45,7 +45,6 @@ class TripletNet(nn.Module):
         return self.embedding_net(x)
 
 
-
 class QuadletNet(nn.Module):
     def __init__(self, embedding_net):
         super(TripletNet, self).__init__()

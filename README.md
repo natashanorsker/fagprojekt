@@ -9,22 +9,16 @@ The task was to create a jewellery recommendation engine that can recommend new 
 
 Say for example that you want to buy a piece of jewellery similiar to the one below but you don't know how to describe it or what exactly to search for. Instead you can search by just taking an image of the necklace and use that image to seach with.
 
-<style>
-.aligncenter {
-    text-align: center;
-}
-</style>
 
-<p class="aligncenter">
 <img src=Figures/test2.jpeg width=200px alt=necklace>
-</p>
+
 
 # Data set
 
 Most training images are similiar to this one
-<p class="aligncenter">
+
 <img src=Figures/test3.jpg width=200px alt=ring>
-</p>
+
 
 
 # How to use
@@ -33,19 +27,13 @@ Specify an image path. The following will be output
 ![image](Figures/nearest.png)
 
 # Necessary files
-The dataset is not stored in this repo but should be located like this. It will be downloaded with the relevant script.
+The dataset is not stored in this repo but should be located like this. It will be downloaded by first running `image_scaping.py`, then `data_loader.py`.
 
 ```
 fagprojekt
 └───data
 ```
 
-Extra files which needs to be downloaded manually from our [drive](https://drive.google.com/file/d/1AaTLZmJ99lKCHlpNMhamrgmljf-4N1WJ/view?usp=sharing). Should be placed like so
-```
-fagprojekt
-└───Segmentation
-      model_final.pth
-```
 # Dependencies
 
 ```
