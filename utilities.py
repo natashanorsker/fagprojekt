@@ -1,5 +1,5 @@
 
-import seaborn as sns
+
 from PIL import Image, ImageChops
 import matplotlib.pyplot as plt
 import os
@@ -166,6 +166,7 @@ def number_per_category_plot(catalog):
 
 
 if __name__ == "__main__":
+    import seaborn as sns
     catalog = dict_from_json()
     # sorted, not_found = sort_by_category(catalog)
     occurrence_plot(catalog)

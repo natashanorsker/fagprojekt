@@ -1,3 +1,6 @@
+import sys
+sys.path.append('..')
+
 from utilities import labels_from_ids
 from dataset import BalancedBatchSampler, make_dataset
 from nets import EmbeddingNet
@@ -18,7 +21,7 @@ from torch.utils.data import (
 )  # Gives easier dataset managment and creates mini batches
 
 cuda = torch.cuda.is_available()
-
+print('device:', str(torch.cuda.get_device_name()))
 # PARAMETERS TO SEARCH:
 param_grid = {'n_epochs': [1, 5, 10, 15], 'lr': [0.0001, 0.005, 0.01]}
 

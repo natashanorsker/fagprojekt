@@ -8,3 +8,4 @@ __pycache__/
 /data_code/master_data.xlsx
 /data_code/masterdata.csv
 *.ipynb_checkpoints
+test-env/
