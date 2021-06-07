@@ -1,5 +1,5 @@
 
-import seaborn as sns
+
 from PIL import Image, ImageChops
 import matplotlib.pyplot as plt
 import os
@@ -22,9 +22,8 @@ def list_pictures(directory, ext='jpg|jpeg|bmp|png|ppm'):
 
 def dict_from_json(path="catalog.json"):
     # open the product catalog:
-    a_file = open(path, "r")
-    catalog = json.loads(a_file.read())
-    a_file.close()
+    with open(path, "r") as a_file:
+        catalog = json.loads(a_file.read())
     return catalog
 
 
@@ -169,6 +168,7 @@ def number_per_category_plot(catalog):
 
 
 if __name__ == "__main__":
+    import seaborn as sns
     catalog = dict_from_json()
    # sorted, not_found = sort_by_category(catalog)
     #occurrence_plot(catalog)

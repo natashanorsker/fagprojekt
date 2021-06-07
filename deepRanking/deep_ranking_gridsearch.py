@@ -1,3 +1,7 @@
+import sys
+sys.path.append('..')
+
+from utilities import labels_from_ids
 from dataset import BalancedBatchSampler, make_dataset
 from nets import EmbeddingNet
 from plots import extract_embeddings, plot_embeddings
@@ -17,9 +21,9 @@ from torch.utils.data import (
 )  # Gives easier dataset managment and creates mini batches
 
 cuda = torch.cuda.is_available()
-
+print('device:', str(torch.cuda.get_device_name()))
 # PARAMETERS TO SEARCH:
-param_grid = {'n_epochs': [1], 'lr': [0.0001]}
+param_grid = {'n_epochs': [1, 5, 10, 15], 'lr': [0.0001, 0.005, 0.01]}
 
 # PARAMETERS THAT CAN BE MANUALLY ADJUSTED:
 # datasets:
@@ -61,7 +65,7 @@ for experiment in list(ParameterGrid(param_grid)):
     # make the model:
     embedding_net = EmbeddingNet()
     model = embedding_net
-    loss_fn = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
+    loss_fn = OnlineTripletLoss(margin, SemihardNegativeTripletSelector(margin))
     optimizer = optim.Adam(model.parameters(), lr=experiment['lr'], weight_decay=1e-4)
     scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
 
