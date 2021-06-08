@@ -8,7 +8,7 @@ from utilities import labels_from_ids
 
 class DataGenerator(Sequence):
     'Generates data for Keras'
-    def __init__(self, list_ids, batch_size=64, dim=(96, 96, 3), shuffle=True, labels=False):
+    def __init__(self, list_ids, batch_size=64, dim=(96, 96, 3), shuffle=True, labels=False, ids=False):
         'Initialization'
         self.dim = dim
         self.batch_size = batch_size
@@ -17,6 +17,7 @@ class DataGenerator(Sequence):
         # self.n_classes = n_classes
         self.shuffle = shuffle
         self.labels = labels
+        self.ids = ids
         self.on_epoch_end()
 
     def __len__(self):
@@ -43,7 +44,7 @@ class DataGenerator(Sequence):
             np.random.shuffle(self.indexes)
 
     def __data_generation(self, list_IDs_temp):
-        'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
+        'Generates data containing batch_size samples'  # X : (n_samples, *dim)
         # Initialization
         X = np.empty((self.batch_size, *self.dim))
 
@@ -52,10 +53,12 @@ class DataGenerator(Sequence):
             # Store sample
             X[i, ] = cv2.imread(ID).reshape((96, 96, 3))
 
-        X = X / 255
+        X = X / 256
 
         if self.labels:
             l = labels_from_ids([os.path.split(ID)[-1].split("_")[0] for ID in list_IDs_temp])
             return X, l
+        elif self.ids:
+            return X, list_IDs_temp
         else:
             return X, X
