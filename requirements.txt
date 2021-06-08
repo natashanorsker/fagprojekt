@@ -1,7 +1,9 @@
 # torch, note this version is specific for hpc
 torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio===0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.8/index.html
 matplotlib
 pandas
 sklearn
 tensorboard
 tensorflow 
+seaborn
