@@ -25,24 +25,17 @@ label_encoder = preprocessing.LabelEncoder()
 label_encoder.fit(list(catalog.keys()))
 
 #make the 'normal' datasets:
-# we limit the searchable database to X products to limit the time it takes to load it all in
 train_dataset, test_dataset = make_dataset(label_encoder, n_test_products=100, NoDuplicates=True)
 
+dataset = torch.utils.data.ConcatDataset([train_dataset, test_dataset])
 #make the dataloaders:
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=500, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=500, shuffle=False)
+data_loader = torch.utils.data.DataLoader(dataset, batch_size=500, shuffle=False)
 
-
-test_embeddings, test_labels = extract_embeddings(test_loader, model)
-train_embeddings, train_labels = extract_embeddings(train_loader, model)
-# concatenate to one 'database'
-embeddings = np.concatenate((train_embeddings, test_embeddings),axis=0)
-labels = np.concatenate((train_labels, test_labels))
-dataset = np.concatenate((train_dataset, test_dataset),axis=0)
+embeddings, labels = extract_embeddings(data_loader, model)
 
 #%% Step 2 load an image and crop it out
 print('Extracting jewellery')
-impath = 'Figures/almas_ring.jpg'
+impath = 'Figures/almas_ring2.jpg'
 im = cv2.imread(impath)
 
 if im is None:
@@ -60,12 +53,12 @@ crop_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB)
 query_img = Image.fromarray(crop_img)
 im = Image.open(impath)
 #%% Step 2 testing. this is for proving that the same image is found
-# testim = dataset[0][0].numpy()    
-# testim = np.asarray(np.interp(testim, (0, 1), (0,255)),dtype=np.uint8)
-# testim = np.swapaxes(testim,0,1)
-# testim = np.swapaxes(testim,1,2)
-# im = Image.fromarray(testim)
-# query_img = Image.fromarray(testim)
+testim = dataset[70][0].numpy()    
+testim = np.asarray(np.interp(testim, (0, 1), (0,255)),dtype=np.uint8)
+testim = np.swapaxes(testim,0,1)
+testim = np.swapaxes(testim,1,2)
+im = Image.fromarray(testim)
+query_img = Image.fromarray(testim)
 #%% Step 3 get embeddings for new image
 print('Searching for similar images')
 model.eval()   # apparently does more than to print out the model. I think it freezes som weights or something
@@ -100,9 +93,10 @@ ax[0].set_title('Query')
 ax[1].imshow(query_img.resize((96*3,96*3)))
 ax[1].axis('off')
 ax[1].set_title('Extraction')
+print('ranked urls')
 for i in range(n_neighbor):
 
-    imgarr = dataset[idx.ravel()[i]][0].numpy() # ikke korrekt?
+    imgarr = dataset[idx[i]][0].numpy() # ikke korrekt?
     imgarr = np.swapaxes(imgarr,0,1)
     imgarr = np.swapaxes(imgarr,1,2)
     rescaled_im = np.interp(imgarr, (imgarr.min(), imgarr.max()), (0,1))
@@ -110,9 +104,14 @@ for i in range(n_neighbor):
     ax[i+2].set_title(f'dist: {dists.ravel()[i]:.3}')
     ax[i+2].axis('off')
 
+    url = catalog[label_encoder.inverse_transform([dataset[idx[i]][1]])[0]]['product_url'][:25]+catalog[label_encoder.inverse_transform([dataset[idx[i]][1]])[0]]['product_url'][catalog[label_encoder.inverse_transform([dataset[idx[i]][1]])[0]]['product_url'].find('/',-15):]
+    print(f'{str(url)}')
+
 plt.tight_layout()
 plt.savefig('nearest.png',dpi=200)
 
 print('Outputted to nearest.png')
+# %%
 
 # %%
+np.uniq
