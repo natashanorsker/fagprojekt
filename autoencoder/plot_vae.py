@@ -8,7 +8,7 @@ from data_generator import DataGenerator
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 model_paths = os.listdir("models")
-model_path = os.path.join(model_paths[-1])
+model_path = os.path.join("temp_model")
 
 os.chdir(os.path.join("models", model_path))
 encoder = keras.models.load_model("encoder", compile=False)
