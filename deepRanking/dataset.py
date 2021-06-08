@@ -66,7 +66,9 @@ class Dataset(torch.utils.data.Dataset):
         return X, y
 
 
-def make_dataset(label_encoder, n_test_products):
+def make_dataset(label_encoder, n_test_products, NoDuplicates=False):
+    '''NoDuplicates selects every 40th elements in the dataset,
+     so no augmented images are retrieved'''
     all_img_paths, all_img_labels = list_paths_labels()
     labels = label_encoder.transform(all_img_labels)
 
@@ -93,8 +95,14 @@ def make_dataset(label_encoder, n_test_products):
         X_train += [all_img_paths[idx] for idx in indices]
         y_train += [labels[idx] for idx in indices]
 
-    y_test = np.array(y_test)
-    y_train = np.array(y_train)
+    if NoDuplicates:
+        y_test = np.array(y_test)[::40]
+        y_train = np.array(y_train)[::40]
+        X_test = np.array(X_test)[::40]
+        X_train = np.array(X_train)[::40]
+    else:
+        y_test = np.array(y_test)
+        y_train = np.array(y_train)
 
     training_set = Dataset(X_train, y_train, label_encoder)
     validation_set = Dataset(X_test, y_test, label_encoder)
