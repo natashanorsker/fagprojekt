@@ -19,6 +19,7 @@ import torch.optim as optim  # For all Optimization algorithms, SGD, Adam, etc.
 from torch.utils.data import (
     DataLoader,
 )  # Gives easier dataset managment and creates mini batches
+from datetime import date   
 
 cuda = torch.cuda.is_available()
 print('device:', str(torch.cuda.get_device_name()))
@@ -79,3 +80,4 @@ for experiment in list(ParameterGrid(param_grid)):
                      n_epochs=experiment['n_epochs'])
 
     experiments.append(run)
+    torch.save(run.model.state_dict(), 'models/online_model_{}_{}loss.pth'.format(date.today(),round(run.val_loss, 4)))
