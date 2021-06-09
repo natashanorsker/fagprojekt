@@ -81,4 +81,4 @@ for experiment in list(ParameterGrid(param_grid)):
                      n_epochs=experiment['n_epochs'])
 
     experiments.append(run)
-    torch.save(run.model.state_dict(), 'models/online_{}_model_{}_{}loss.pth'.format(param_grid['kind'], date.today(),round(run.val_loss, 4)))
+    torch.save(run.model.state_dict(), 'models/online_{}_model_margin_{}_{}_{}loss.pth'.format(param_grid['kind'],experiment['margin'], date.today(),round(run.val_loss, 4)))
