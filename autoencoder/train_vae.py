@@ -16,24 +16,16 @@ from keras import backend as K
 from keras.layers import Input, Dense, Conv2D, Conv2DTranspose, Flatten, Lambda, Reshape
 from keras.models import Model
 from keras.losses import binary_crossentropy
-from data_generator import DataGenerator
+from data_generator import DataGenerator, get_train_test_split_paths
 tf.executing_eagerly()
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Seed for reproducability
-seed = 25
+seed = 42069
 np.random.seed(seed)
 
-# Get list of filenames for the data generators
-filenames = []
-for root, dirs, files in os.walk("../data"):
-    for file in files:
-        if ".jpg" in file and "model_images" not in root:
-            filenames.append(os.path.join(root, file))
-
-N = len(filenames)
-idx = (N // 10) * 9
+train_set, _ = get_train_test_split_paths()
 
 
 def train_vae(epochs=10, latent_dim=64, batch_size=2**9,
@@ -118,9 +110,9 @@ def train_vae(epochs=10, latent_dim=64, batch_size=2**9,
     decoder = Model(decoder_input, decoder_conv3, name="Decoder")
     vae = Model(encoder_input, decoder(encoder(encoder_input)), name="VAE")
 
-    shuffle(filenames)
-    train_data = filenames[:idx]
-    val_data = filenames[idx:]
+    s = int(len(train_set) // 10)
+    train_data = train_set[s:]
+    val_data = train_set[:s]
 
     # Constructing data generators
     generator = DataGenerator(train_data, batch_size=batch_size)
@@ -176,4 +168,4 @@ def train_vae(epochs=10, latent_dim=64, batch_size=2**9,
 
 
 if __name__ == "__main__":
-    train_vae(epochs=1, model_name="temp_model", latent_dim=64)
+    train_vae(epochs=10, model_name="temp_model", latent_dim=64)

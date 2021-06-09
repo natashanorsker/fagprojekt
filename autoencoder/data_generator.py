@@ -40,7 +40,7 @@ class DataGenerator(Sequence):
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.indexes = np.arange(len(self.list_IDs))
-        if self.shuffle == True:
+        if self.shuffle:
             np.random.shuffle(self.indexes)
 
     def __data_generation(self, list_IDs_temp):
@@ -62,3 +62,20 @@ class DataGenerator(Sequence):
             return X, list_IDs_temp
         else:
             return X, X
+
+
+def get_train_test_split_paths(test_proportion=0.1):
+    filenames = []
+    for root, dirs, files in os.walk("../data"):
+        for file in files:
+            if ".jpg" in file and "model_images" not in root and "not_in_master" not in root:
+                filenames.append(os.path.join(root, file))
+
+    np.random.shuffle(filenames)
+
+    s = int(len(filenames) // (1 / test_proportion))
+
+    train_set = filenames[s:]
+    test_set = filenames[:s]
+
+    return train_set, test_set
