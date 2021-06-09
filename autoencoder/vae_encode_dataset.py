@@ -1,16 +1,11 @@
 import os.path
-import random
-
 import keras.models
 import numpy as np
-from random import shuffle
-from data_generator import DataGenerator
+from data_generator import DataGenerator, get_train_test_split_paths
 from tqdm import tqdm
 
-random.seed(25)
-np.random.seed(25)
 
-model_name = "temp_model"
+model_name = "final_model"
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -22,19 +17,12 @@ os.chdir(dir_path)
 encoder.summary()
 decoder.summary()
 
-# Get list of filenames for the data generators
-filenames = []
-walk = os.walk("../data")
-for root, dirs, files in walk:
-    for file in files:
-        if ".jpg" in file and "model_images" not in root and "not_in_master" not in root:
-            filenames.append(os.path.join(root, file))
+seed = 42069
+np.random.seed(seed)
 
+train_set, _ = get_train_test_split_paths()
 
-
-# Constructing data generators
-shuffle(filenames)
-generator = DataGenerator(filenames, batch_size=2**9, ids=True)
+generator = DataGenerator(train_set, batch_size=2**9, ids=True)
 
 latent_dim = decoder.input.shape[1]
 N = len(generator) * generator.batch_size #len(filenames)
