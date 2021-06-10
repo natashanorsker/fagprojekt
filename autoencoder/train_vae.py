@@ -7,7 +7,6 @@
 import os
 import numpy as np
 import tensorflow as tf
-from random import shuffle
 from contextlib import redirect_stdout
 import datetime
 
@@ -168,4 +167,4 @@ def train_vae(epochs=10, latent_dim=64, batch_size=2**9,
 
 
 if __name__ == "__main__":
-    train_vae(epochs=10, model_name="temp_model", latent_dim=64)
+    train_vae(epochs=1, model_name="temp_model2", latent_dim=64)
