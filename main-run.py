@@ -39,7 +39,7 @@ impath = 'Figures/almas_ring2.jpg'
 im = cv2.imread(impath)
 
 if im is None:
-    # just makes it easier when you misstype a jpeg and jpg image
+    # just makes it easier when you mistype a jpeg and jpg image
     if 'jpg' in impath:
         impath = impath[:-3]+'jpeg'
         im = cv2.imread(impath)

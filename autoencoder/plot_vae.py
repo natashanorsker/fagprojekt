@@ -3,12 +3,14 @@ import os.path
 import keras.models
 import numpy as np
 import matplotlib.pyplot as plt
-from random import shuffle
-from data_generator import DataGenerator
+from data_generator import DataGenerator, get_train_test_split_paths
+from sklearn.decomposition import PCA
+
+model_name = "final_model"
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 model_paths = os.listdir("models")
-model_path = os.path.join("temp_model")
+model_path = os.path.join(model_name)
 
 os.chdir(os.path.join("models", model_path))
 encoder = keras.models.load_model("encoder", compile=False)
@@ -20,19 +22,8 @@ decoder.summary()
 
 latent_dim = decoder.input.shape[1]
 
-# Get list of filenames for the data generators
-filenames = []
-walk = os.walk("../data")
-for root, dirs, files in walk:
-    for file in files:
-        if ".jpg" in file and "model_images" not in root:
-            filenames.append(os.path.join(root, file))
+_, filenames = get_train_test_split_paths()
 
-# Less files when debugging
-#filenames = filenames[:len(filenames)//5]
-
-# Constructing data generators
-shuffle(filenames)
 generator = DataGenerator(filenames, batch_size=2**9, labels=True)
 
 
@@ -91,13 +82,17 @@ def display_image_sequence(start, end, no_of_images):
 imgs, labels = generator[0]
 encoded = encoder.predict(imgs)
 
+pca = PCA(n_components=2)
+pca.fit(encoded.T)
+
+
 d = {v: i for i, v in enumerate(list(set(labels)))}
 
 cols = [d[l] for l in labels]
 
 # Displaying images in latent space
 plt.figure(figsize=(14, 12))
-plt.scatter(encoded[:, 0], encoded[:, 1], s=10, c=cols)
+plt.scatter(pca.components_[0], pca.components_[1], s=10, c=cols)
 plt.colorbar()
 plt.grid()
 plt.show()

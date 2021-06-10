@@ -5,7 +5,7 @@ from data_generator import DataGenerator, get_train_test_split_paths
 from tqdm import tqdm
 
 
-model_name = "temp_model"
+model_name = "final_model"
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 

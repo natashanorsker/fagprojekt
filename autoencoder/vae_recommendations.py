@@ -11,7 +11,7 @@ import cv2
 seed = 42069
 np.random.seed(seed)
 
-model_name = "temp_model"
+model_name = "final_model"
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -65,9 +65,9 @@ for side in range(2):
                 axs[row, col + (6*side)].imshow(im)
             else:
                 img_id = most_similar[row + (side * 5)][col - 1]
-                im = cv2.cvtColor(cv2.imread(labels[img_id]).reshape((96, 96, 3)).astype(np.float32) / 256, cv2.COLOR_RGB2BGR)
+                path = labels[img_id][:-10] + "_00_OG.jpg"
+                im = cv2.cvtColor(cv2.imread(path).reshape((96, 96, 3)).astype(np.float32) / 256, cv2.COLOR_RGB2BGR)
                 axs[row, col + (6 * side)].imshow(im)
 
 plt.tight_layout()
 plt.show()
-
