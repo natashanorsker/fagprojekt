@@ -11,3 +11,4 @@ __pycache__/
 test-env/
 deepRanking/runs/
 survey_images/
+*.pyc

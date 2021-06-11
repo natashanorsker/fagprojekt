@@ -1,14 +1,9 @@
 import os
 
 import cv2
-import keras
-import matplotlib.pyplot as plt
-import numpy as np
+import numpy.random
+from deepRanking.nets import EmbeddingNet
 import torch
-from PIL import Image
-from sklearn import preprocessing
-from torchvision import transforms
-
 import detectron2segment.inference
 from autoencoder.data_generator import get_train_test_split_paths
 from deepRanking.dataset import make_dataset
@@ -114,4 +109,7 @@ for d in os.listdir("survey_images"):
         cv2.imwrite(p, im)
 
     # TODO: Deep ranking recommendations
+    model = EmbeddingNet()
+    model.load_state_dict(
+        torch.load('deepRanking/models/online_model7-6_0.3979loss.pth', map_location=torch.device('cpu')))
 

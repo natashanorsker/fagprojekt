@@ -33,7 +33,7 @@ margin = 1  # can't go into search?
 # MAKING THE DATASETS
 
 # make the 'normal' datasets:
-train_dataset, test_dataset = make_dataset(n_test_products=n_test_products)
+train_dataset, test_dataset = make_dataset(n_val_products=n_test_products)
 
 # make the batch samplers:
 train_batch_sampler = BalancedBatchSampler(train_dataset, n_classes=n_train_classes, n_samples=n_samples)
