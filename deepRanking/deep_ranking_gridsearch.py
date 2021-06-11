@@ -23,7 +23,7 @@ from torch.utils.data import (
 cuda = torch.cuda.is_available()
 print('device:', str(torch.cuda.get_device_name()))
 # PARAMETERS TO SEARCH:
-param_grid = {'n_epochs': [20], 'lr': [0.0001],'margin':[0.1,0.2,0.5,1]}
+param_grid = {'n_epochs': [20], 'lr': [0.0001],'margin':[0.1,0.2,0.5,1], 'batching':'SemiHard'}
 
 # PARAMETERS THAT CAN BE MANUALLY ADJUSTED:
 # datasets:
@@ -76,6 +76,6 @@ for experiment in list(ParameterGrid(param_grid)):
     run = Experiment(train_loader=online_train_loader, val_loader=online_test_loader, model=model, label_encoder=label_encoder, loss_fn=loss_fn,
                      optimizer=optimizer, scheduler=scheduler, cuda=cuda,
                      to_tensorboard=True, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0, margin=experiment['margin'], lr=experiment['lr'],
-                     n_epochs=experiment['n_epochs'])
+                     n_epochs=experiment['n_epochs'], batching=experiment['batching'])
 
     experiments.append(run)

@@ -23,7 +23,7 @@ def pdist(vectors):
 
 class Experiment:
     def __init__(self, train_loader, val_loader, model, label_encoder, loss_fn, optimizer, scheduler, cuda, log_interval=50,
-                 to_tensorboard=True, metrics=[], start_epoch=0, margin=1, lr=0.01, n_epochs=10):
+                 to_tensorboard=True, metrics=[], start_epoch=0, margin=1, lr=0.01, n_epochs=10, batching='SemiHard'):
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.model = model
@@ -42,12 +42,13 @@ class Experiment:
         self.step = 0
         self.val_loss = 0
         self.train_loss = 0
+        self.batching = batching
 
 
         if self.to_tensorboard:
             now = datetime.datetime.now()
             self.writer = SummaryWriter(
-                f'runs/{date.today().strftime("%b-%d-%Y")}/{self.n_epochs}ep_{self.margin}m_{self.lr}lr_' + datetime.datetime.now().strftime(
+                f'runs/{date.today().strftime("%b-%d-%Y")}/{self.batching}_{self.n_epochs}ep_{self.margin}m_{self.lr}lr_' + datetime.datetime.now().strftime(
                     "%Y%m%d-%H%M%S"))
             self.train_loss, self.val_loss = self.fit()
             self.writer.close()
