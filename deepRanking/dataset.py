@@ -128,7 +128,7 @@ def make_dataset(label_encoder, n_val_products, NoDuplicates=False):
     return training_set, validation_set
 
 
-########
+##########
 
 class BalancedBatchSampler(BatchSampler):
     """
