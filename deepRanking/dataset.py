@@ -77,13 +77,20 @@ def make_dataset(label_encoder, n_val_products, NoDuplicates=False):
     '''NoDuplicates selects every 40th elements in the dataset,
      so no augmented images are retrieved'''
 
+    # make sure that our test set is not used for training and validation:
     test_set_paths = get_train_test_split_paths(folder_depth=1)[1]
+    test_set_labels = [a.split('\\')[-2] for a in test_set_paths]
 
+    # get all possible images:
     all_img_paths, all_img_labels = list_paths_labels()
+
+    # remove test images from pool:
+    # indices to remove:
+    indices = [i for i, e in enumerate(all_img_paths) if e in test_set_paths]
+    all_img_paths = [i for j, i in enumerate(all_img_paths) if j not in indices]
+    all_img_labels = [i for j, i in enumerate(all_img_labels) if j not in indices]
+
     labels = label_encoder.transform(all_img_labels)
-
-    all_img_paths = [path for path in all_img_paths if path in test_set_paths]
-
     labels_set = list(set(labels))
     label_to_indices = {label: np.where(labels == label)[0] for label in labels_set}
 
@@ -110,6 +117,7 @@ def make_dataset(label_encoder, n_val_products, NoDuplicates=False):
         y_train = np.array(y_train)[::40]
         X_val = np.array(X_val)[::40]
         X_train = np.array(X_train)[::40]
+
     else:
         y_val = np.array(y_val)
         y_train = np.array(y_train)
@@ -120,7 +128,7 @@ def make_dataset(label_encoder, n_val_products, NoDuplicates=False):
     return training_set, validation_set
 
 
-########
+##########
 
 class BalancedBatchSampler(BatchSampler):
     """

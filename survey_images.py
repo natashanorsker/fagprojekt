@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import os
 import cv2
 import numpy.random
+from deepRanking.nets import EmbeddingNet
+import torch
 import detectron2segment.inference
 from autoencoder.data_generator import get_train_test_split_paths
 import keras
@@ -62,4 +64,7 @@ for d in os.listdir("survey_images"):
 
 
     # TODO: Deep ranking recommendations
+    model = EmbeddingNet()
+    model.load_state_dict(
+        torch.load('deepRanking/models/online_model7-6_0.3979loss.pth', map_location=torch.device('cpu')))
 
