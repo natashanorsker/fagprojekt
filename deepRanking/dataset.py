@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+from autoencoder.data_generator import get_train_test_split_paths
 from utilities import list_pictures, labels_from_ids
 import json
 import os
@@ -18,19 +19,25 @@ from torch.utils.data.sampler import BatchSampler
 import warnings
 
 # set seed
-random.seed(420)
-seed(420)
+random.seed(42069)
+seed(42069)
 
 
-def list_paths_labels():
+def list_paths_labels(folder_depth=1):
     # first make a list of every possible image
     # get ids for the different classes [ring, earring, etc.]
     catalog = json.loads(open('../catalog.json', "r").read())
     # catalog = dict_from_json('../catalog.json')
     all_img_paths = []
     all_img_labels = []
+
+    root = os.path.dirname(os.path.realpath(__file__))
+    for _ in range(folder_depth):
+        root = os.path.split(root)[0]
+    root = os.path.join(root, "data")
+
     for label in catalog.keys():
-        new_imgs = list_pictures(os.path.join("../data", label))
+        new_imgs = list_pictures(os.path.join(root, label))
         all_img_paths += new_imgs
         all_img_labels += [label] * len(new_imgs)
 
@@ -66,29 +73,32 @@ class Dataset(torch.utils.data.Dataset):
         return X, y
 
 
-def make_dataset(label_encoder, n_test_products, NoDuplicates=False):
+def make_dataset(label_encoder, n_val_products, NoDuplicates=False):
     '''NoDuplicates selects every 40th elements in the dataset,
      so no augmented images are retrieved'''
+
+    test_set_paths = get_train_test_split_paths(folder_depth=1)[1]
+
     all_img_paths, all_img_labels = list_paths_labels()
     labels = label_encoder.transform(all_img_labels)
+
+    all_img_paths = [path for path in all_img_paths if path in test_set_paths]
 
     labels_set = list(set(labels))
     label_to_indices = {label: np.where(labels == label)[0] for label in labels_set}
 
-    classes = np.random.choice(labels_set, n_test_products, replace=False)
-
-    test_products = np.random.choice(labels_set, n_test_products, replace=False)
+    test_products = np.random.choice(labels_set, n_val_products, replace=False)
     train_products = set(labels_set) - set(test_products)
 
     X_train = []
     y_train = []
-    X_test = []
-    y_test = []
+    X_val = []
+    y_val = []
 
     for test_product in test_products:
         indices = label_to_indices[test_product]
-        X_test += [all_img_paths[idx] for idx in indices]
-        y_test += [labels[idx] for idx in indices]
+        X_val += [all_img_paths[idx] for idx in indices]
+        y_val += [labels[idx] for idx in indices]
 
     for train_product in train_products:
         indices = label_to_indices[train_product]
@@ -96,16 +106,16 @@ def make_dataset(label_encoder, n_test_products, NoDuplicates=False):
         y_train += [labels[idx] for idx in indices]
 
     if NoDuplicates:
-        y_test = np.array(y_test)[::40]
+        y_val = np.array(y_val)[::40]
         y_train = np.array(y_train)[::40]
-        X_test = np.array(X_test)[::40]
+        X_val = np.array(X_val)[::40]
         X_train = np.array(X_train)[::40]
     else:
-        y_test = np.array(y_test)
+        y_val = np.array(y_val)
         y_train = np.array(y_train)
 
     training_set = Dataset(X_train, y_train, label_encoder)
-    validation_set = Dataset(X_test, y_test, label_encoder)
+    validation_set = Dataset(X_val, y_val, label_encoder)
 
     return training_set, validation_set
 

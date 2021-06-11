@@ -19,11 +19,12 @@ import torch.optim as optim  # For all Optimization algorithms, SGD, Adam, etc.
 from torch.utils.data import (
     DataLoader,
 )  # Gives easier dataset managment and creates mini batches
+from datetime import date   
 
 cuda = torch.cuda.is_available()
-print('device:', str(torch.cuda.get_device_name()))
+#print('device:', str(torch.cuda.get_device_name()))
 # PARAMETERS TO SEARCH:
-param_grid = {'n_epochs': [20], 'lr': [0.0001],'margin':[0.1,0.2,0.5,1], 'batching':'SemiHard'}
+param_grid = {'n_epochs': [20], 'lr': [0.0001],'margin':[0.1,0.2,0.5,1],'kind':'random'}
 
 # PARAMETERS THAT CAN BE MANUALLY ADJUSTED:
 # datasets:
@@ -42,7 +43,7 @@ catalog = dict_from_json('../catalog.json')
 label_encoder.fit(list(catalog.keys()))
 
 # make the 'normal' datasets:
-train_dataset, test_dataset = make_dataset(label_encoder, n_test_products=n_test_products)
+train_dataset, test_dataset = make_dataset(label_encoder, n_val_products=n_test_products)
 
 # make the batch samplers:
 train_batch_sampler = BalancedBatchSampler(train_dataset, n_classes=n_train_classes, n_samples=n_samples)
@@ -65,7 +66,8 @@ for experiment in list(ParameterGrid(param_grid)):
     # make the model:
     embedding_net = EmbeddingNet()
     model = embedding_net
-    loss_fn = OnlineTripletLoss(experiment['margin'], SemihardNegativeTripletSelector(experiment['margin']))
+    # HardestNegativeTripletSelector, RandomNegativeTripletSelector, SemihardNegativeTripletSelector
+    loss_fn = OnlineTripletLoss(experiment['margin'], RandomNegativeTripletSelector(experiment['margin']))
     optimizer = optim.Adam(model.parameters(), lr=experiment['lr'], weight_decay=1e-4)
     scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
 
@@ -74,8 +76,9 @@ for experiment in list(ParameterGrid(param_grid)):
 
     # make the whole grid thing here
     run = Experiment(train_loader=online_train_loader, val_loader=online_test_loader, model=model, label_encoder=label_encoder, loss_fn=loss_fn,
-                     optimizer=optimizer, scheduler=scheduler, cuda=cuda,
+                     optimizer=optimizer, scheduler=scheduler, cuda=cuda, kind=param_grid['kind'],
                      to_tensorboard=True, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0, margin=experiment['margin'], lr=experiment['lr'],
-                     n_epochs=experiment['n_epochs'], batching=experiment['batching'])
+                     n_epochs=experiment['n_epochs'])
 
     experiments.append(run)
+    torch.save(run.model.state_dict(), 'models/online_{}_model_margin_{}_{}_{}loss.pth'.format(param_grid['kind'],experiment['margin'], date.today(),round(run.val_loss, 4)))
