@@ -19,6 +19,8 @@ for d in os.listdir("survey_images"):
                 dir_recs.append(im)
             recs.append(dir_recs)
 
+    ids = np.random.choice([0, 1, 2], replace=False, size=3)
+
     fig, axs = plt.subplots(nrows=4, ncols=5)
 
     for i in range(4):
@@ -26,10 +28,12 @@ for d in os.listdir("survey_images"):
             if not i and j == 2:
                 axs[i, j].imshow(query)
                 axs[i, j].set_title("Query Image")
+            if not i and j == 4:
+                axs[i, j].text(0.5, 0.5, str(9*ids[0] + 3*ids[1] + ids[2]))
             if i == 1 and j == 2:
                 axs[i, j].set_title("Recommendations")
             if i:
-                axs[i, j].imshow(recs[i - 1][j])
+                axs[i, j].imshow(recs[ids[i - 1]][j])
             if i and j == 0:
                 axs[i, j].set_ylabel("ABC"[i - 1], rotation=0, fontsize=16, labelpad=20)
                 axs[i, j].set_xticklabels([])

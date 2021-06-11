@@ -48,7 +48,7 @@ fig, axs = plt.subplots(nrows=5, ncols=12, figsize=(20, 8))
 
 
 plt.rc('figure', titlesize=14)
-fig.suptitle("VAE Recommendations")
+fig.suptitle("VAE Recommendations on catalog images")
 
 for row in axs:
     for ax in row:

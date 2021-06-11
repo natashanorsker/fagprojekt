@@ -64,10 +64,12 @@ class DataGenerator(Sequence):
             return X, X
 
 
-def get_train_test_split_paths(test_proportion=0.1):
+def get_train_test_split_paths(test_proportion=0.1, folder_depth=1):
     filenames = []
     d = os.path.dirname(os.path.realpath(__file__))
-    d = os.path.join(os.path.split(d)[0], "data")
+    for _ in range(folder_depth):
+        d = os.path.split(d)[0]
+    d = os.path.join(d, "data")
     for root, dirs, files in os.walk(d):
         for file in files:
             if ".jpg" in file and "model_images" not in root and "not_in_master" not in root:
@@ -84,5 +86,3 @@ def get_train_test_split_paths(test_proportion=0.1):
     test_set = filenames[:s]
 
     return train_set, test_set
-
-
