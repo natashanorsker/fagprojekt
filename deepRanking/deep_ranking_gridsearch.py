@@ -22,7 +22,7 @@ from torch.utils.data import (
 from datetime import date   
 
 cuda = torch.cuda.is_available()
-print('device:', str(torch.cuda.get_device_name()))
+#print('device:', str(torch.cuda.get_device_name()))
 # PARAMETERS TO SEARCH:
 param_grid = {'n_epochs': [20], 'lr': [0.0001],'margin':[0.1,0.2,0.5,1],'kind':'random'}
 
@@ -43,7 +43,7 @@ catalog = dict_from_json('../catalog.json')
 label_encoder.fit(list(catalog.keys()))
 
 # make the 'normal' datasets:
-train_dataset, test_dataset = make_dataset(label_encoder, n_test_products=n_test_products)
+train_dataset, test_dataset = make_dataset(label_encoder, n_val_products=n_test_products)
 
 # make the batch samplers:
 train_batch_sampler = BalancedBatchSampler(train_dataset, n_classes=n_train_classes, n_samples=n_samples)

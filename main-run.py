@@ -25,7 +25,7 @@ label_encoder = preprocessing.LabelEncoder()
 label_encoder.fit(list(catalog.keys()))
 
 #make the 'normal' datasets:
-train_dataset, test_dataset = make_dataset(label_encoder, n_test_products=100, NoDuplicates=True)
+train_dataset, test_dataset = make_dataset(label_encoder, n_val_products=100, NoDuplicates=True)
 
 dataset = torch.utils.data.ConcatDataset([train_dataset, test_dataset])
 #make the dataloaders:
