@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+
 import cv2
 import numpy.random
 from deepRanking.nets import EmbeddingNet
@@ -57,19 +58,27 @@ vae_labels = np.load(os.path.join("autoencoder", "models", model_name, "labels.n
 model = EmbeddingNet()
 model.load_state_dict(torch.load('deepRanking/models/online_model7-6_0.3979loss.pth', map_location=torch.device('cpu')))
 
+encodings = np.load(os.path.join("autoencoder", "models", model_name, "encodings.npy"))
+labels = np.load(os.path.join("autoencoder", "models", model_name, "labels.npy"), allow_pickle=True)
+
+# load pytorch tensors and model
+# TODO: in the future the tensors should just be loaded from a file
+model = EmbeddingNet()
+model.load_state_dict(torch.load('deepRanking/models/online_model7-6_0.3979loss.pth', map_location=torch.device('cpu')))
+model.eval()
+
 catalog = dict_from_json('catalog.json')
 label_encoder = preprocessing.LabelEncoder()
 label_encoder.fit(list(catalog.keys()))
 
 #make the 'normal' datasets:
-train_dataset, test_dataset = make_dataset(label_encoder, n_val_products=100, NoDuplicates=True)
+train_dataset, test_dataset = make_dataset(label_encoder, n_test_products=100, NoDuplicates=False)
 
 dataset = torch.utils.data.ConcatDataset([train_dataset, test_dataset])
 #make the dataloaders:
 data_loader = torch.utils.data.DataLoader(dataset, batch_size=500, shuffle=False)
 
-dr_embeddings, dr_labels = extract_embeddings(data_loader, model)
-
+embeddingsP, labelsP = extract_embeddings(data_loader, model)
 
 for d in os.listdir("survey_images"):
     print(d)
@@ -107,21 +116,34 @@ for d in os.listdir("survey_images"):
         p = os.path.join("survey_images", d, "autoencoder", p.split(os.sep)[-1])
         cv2.imwrite(p, im)
 
-    # Deep ranking
-    query_img = cv2.cvtColor(query_img.astype("float32"), cv2.COLOR_BGR2RGB)
-    query_img = (query_img * 255).astype("uint8")
-    query_img = Image.fromarray(query_img)
-    transform = transforms.Compose([transforms.Resize((96, 96)),
-                                    transforms.ToTensor()])
+    # Triplet
+    crop_img = cv2.cvtColor(query_img, cv2.COLOR_BGR2RGB)
+    query_img = Image.fromarray(crop_img)
+
+    transform = transforms.Compose([transforms.Resize((96,96)),
+                                 transforms.ToTensor()])
     img_t = transform(query_img)
     batch_t = torch.unsqueeze(img_t, 0)
 
-    target_enc = model.get_embedding(batch_t)
+    # Generate prediction
+    with torch.no_grad():
+        embedding = model(batch_t)
 
-    dists = np.sum((dr_embeddings - target_enc) ** 2, axis=1)
+    dists = np.sum((embeddingsP - embedding) ** 2, axis=1)
 
     closest_ids = np.argsort(dists)[:5]
 
-    recs = dr_labels[closest_ids]
+    recs = dataset[closest_ids]  #this is not possible # .numpy() maybe needed
 
-    print("")
+    for rec in recs:
+        p = "/".join(rec.split(os.sep)[1:])
+        p = p[:-10] + "_00_OG.jpg"
+        im = cv2.imread(p)
+        p = os.path.join("survey_images", d, "autoencoder", p.split(os.sep)[-1])
+        cv2.imwrite(p, im)
+
+    # TODO: Deep ranking recommendations
+    model = EmbeddingNet()
+    model.load_state_dict(
+        torch.load('deepRanking/models/online_model7-6_0.3979loss.pth', map_location=torch.device('cpu')))
+
