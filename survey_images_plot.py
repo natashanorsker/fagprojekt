@@ -3,6 +3,16 @@ import matplotlib.pyplot as plt
 import os
 import cv2
 
+for d in os.listdir("Questionnaire_imgs"):
+    dd = os.path.join("survey_images", d[:-4])
+    if not os.path.isdir(dd):
+        os.mkdir(dd)
+        os.mkdir(os.path.join(dd, "autoencoder"))
+        os.mkdir(os.path.join(dd, "deepranking"))
+        os.mkdir(os.path.join(dd, "random"))
+        im = cv2.imread(os.path.join("Questionnaire_imgs", d))
+        cv2.imwrite(os.path.join(dd, "query.jpg"), im)
+
 for d in os.listdir("survey_images"):
 
     recs = []

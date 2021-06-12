@@ -86,3 +86,4 @@ def get_train_test_split_paths(test_proportion=0.1, folder_depth=1):
     test_set = filenames[:s]
 
     return train_set, test_set
+

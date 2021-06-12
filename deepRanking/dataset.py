@@ -26,7 +26,6 @@ seed(42069)
 def list_paths_labels(folder_depth=1):
     # first make a list of every possible image
     # get ids for the different classes [ring, earring, etc.]
-    catalog = json.loads(open('../catalog.json', "r").read())
     # catalog = dict_from_json('../catalog.json')
     all_img_paths = []
     all_img_labels = []
@@ -34,6 +33,9 @@ def list_paths_labels(folder_depth=1):
     root = os.path.dirname(os.path.realpath(__file__))
     for _ in range(folder_depth):
         root = os.path.split(root)[0]
+
+    catalog = json.loads(open(os.path.join(root, "catalog.json"), "r").read())
+
     root = os.path.join(root, "data")
 
     for label in catalog.keys():
@@ -73,16 +75,15 @@ class Dataset(torch.utils.data.Dataset):
         return X, y
 
 
-def make_dataset(label_encoder, n_val_products, NoDuplicates=False):
+def make_dataset(label_encoder, n_val_products, NoDuplicates=False, folder_depth=1):
     '''NoDuplicates selects every 40th elements in the dataset,
      so no augmented images are retrieved'''
 
     # make sure that our test set is not used for training and validation:
     test_set_paths = get_train_test_split_paths(folder_depth=1)[1]
-    test_set_labels = [a.split('\\')[-2] for a in test_set_paths]
 
     # get all possible images:
-    all_img_paths, all_img_labels = list_paths_labels()
+    all_img_paths, all_img_labels = list_paths_labels(folder_depth=folder_depth)
 
     # remove test images from pool:
     # indices to remove:
