@@ -79,7 +79,6 @@ def make_dataset(label_encoder, n_val_products, NoDuplicates=False):
 
     # make sure that our test set is not used for training and validation:
     test_set_paths = get_train_test_split_paths(folder_depth=1)[1]
-    test_set_labels = [a.split('\\')[-2] for a in test_set_paths]
 
     # get all possible images:
     all_img_paths, all_img_labels = list_paths_labels()
