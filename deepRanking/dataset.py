@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-from autoencoder.data_generator import get_train_test_split_paths
+from autoencoder.train_test import get_train_test_split_paths
 from utilities import list_pictures, labels_from_ids
 import json
 import os
@@ -75,7 +75,9 @@ class Dataset(torch.utils.data.Dataset):
 
 def make_dataset(label_encoder, n_val_products, NoDuplicates=False):
     '''NoDuplicates selects every 40th elements in the dataset,
-     so no augmented images are retrieved'''
+     so no augmented images are retrieved
+     
+     return: train_set, test_set'''
 
     # make sure that our test set is not used for training and validation:
     test_set_paths = get_train_test_split_paths(folder_depth=1)[1]

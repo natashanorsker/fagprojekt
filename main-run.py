@@ -109,9 +109,7 @@ for i in range(n_neighbor):
 
 plt.tight_layout()
 plt.savefig('nearest.png',dpi=200)
+plt.show()
 
 print('Outputted to nearest.png')
 # %%
-
-# %%
-np.uniq
