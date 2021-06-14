@@ -234,11 +234,12 @@ class FunctionNegativeTripletSelector:
     and return a negative index for that pair
     """
 
-    def __init__(self, margin, negative_selection_fn, cpu=True):
+    def __init__(self, margin, negative_selection_fn, name, cpu=True):
         super(FunctionNegativeTripletSelector, self).__init__()
         self.cpu = cpu
         self.margin = margin
         self.negative_selection_fn = negative_selection_fn
+        self.name = name
 
     def get_triplets(self, embeddings, labels):
         if self.cpu:
@@ -278,19 +279,19 @@ class FunctionNegativeTripletSelector:
 
 def HardestNegativeTripletSelector(margin, cpu=False): return FunctionNegativeTripletSelector(margin=margin,
                                                                                               negative_selection_fn=hardest_negative,
-                                                                                              cpu=cpu)
+                                                                                              cpu=cpu, name='hard')
 
 
 def RandomNegativeTripletSelector(margin, cpu=False): return FunctionNegativeTripletSelector(margin=margin,
                                                                                              negative_selection_fn=random_hard_negative,
-                                                                                             cpu=cpu)
+                                                                                             cpu=cpu, name='random')
 
 
 def SemihardNegativeTripletSelector(margin, cpu=False): return FunctionNegativeTripletSelector(margin=margin,
                                                                                                negative_selection_fn=lambda
                                                                                                    x: semihard_negative(
                                                                                                    x, margin),
-                                                                                               cpu=cpu)
+                                                                                               cpu=cpu, name='semihard')
 
 
 
