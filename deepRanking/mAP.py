@@ -1,35 +1,33 @@
 #%%
-import numpy as np
-from sklearn.metrics import top_k_accuracy_score, recall_score, average_precision_score
 import sys
-
-from torchvision.transforms import transforms
 sys.path.append('..')
+
+import numpy as np
 
 import cv2
 import numpy as np
 import torch
+import torch.utils.data as data_utils
 from matplotlib import pyplot as plt
 from PIL import Image
 from sklearn import preprocessing
-import torch.utils.data as data_utils
 
-
+from utilities import dict_from_json, labels_from_ids
 from dataset import make_dataset
 from nets import EmbeddingNet
 from plots import extract_embeddings
-from utilities import dict_from_json, labels_from_ids
+from autoencoder.data_generator import get_train_test_split_paths
 
 print('Getting embeddings')
 model = EmbeddingNet()
-model.load_state_dict(torch.load('models/online_model7-6_0.3979loss.pth', map_location=torch.device('cpu')))
+model.load_state_dict(torch.load('models/online_semi_model_margin_0.1_2021-06-13_0.0487loss.pth', map_location=torch.device('cpu')))
 
 catalog = dict_from_json('../catalog.json')
 label_encoder = preprocessing.LabelEncoder()
 label_encoder.fit(list(catalog.keys()))
 
 #make the 'normal' datasets:
-train_dataset, test_dataset = make_dataset(label_encoder, n_test_products=10, NoDuplicates=True)
+train_dataset, test_dataset = make_dataset(label_encoder, n_val_products=100, NoDuplicates=True)
 
 dataset = torch.utils.data.ConcatDataset([test_dataset])
 # dataset = torch.utils.data.ConcatDataset([train_dataset, test_dataset])
@@ -41,13 +39,11 @@ embeddings, labels = extract_embeddings(data_loader, model)
 
 #%%
 label_encoder2 = preprocessing.LabelEncoder()
-
+label_encoder2.fit(['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings', 'Misc'])
 #%%
-recall = np.zeros(len(embeddings))
-average_precisions = np.zeros(len(embeddings))
-K = 50 # number of retrieved items
+K = 19 # number of retrieved items to query image
 cmc = np.zeros(K) # @k
-y_pred = []
+aps = []
 for i, embedding in enumerate(embeddings):
     # query
     emb_label = label_encoder.inverse_transform([labels[i]])[0]
@@ -56,24 +52,36 @@ for i, embedding in enumerate(embeddings):
     closest_ids = np.argsort(dists)[:K] # @k
 
     transform = []  
+    p = np.zeros(K)
     for j in closest_ids:
         recs = torch.tensor(dataset[j][0].numpy())
-        
         transform.append(str(label_encoder.inverse_transform([dataset[j][1]])[0]))
-    y_pred.append(labels_from_ids(transform))
-tmp = label_encoder.inverse_transform(labels)
-y_true = labels_from_ids(tmp)
 
-label_encoder2.fit(['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings'])
-y_true = label_encoder2.transform(labelq)
-y_pred = label_encoder2.transform(np.array(y_pred).ravel())
+    y_true = label_encoder2.transform(labelq)
+    y_pred = labels_from_ids(transform)
+    y_pred = label_encoder2.transform(np.array(y_pred).ravel())
+
+    for k in range(1, K+1):
+        p[k-1] = np.sum((y_true == y_pred[:k]))/len(y_pred[:k])
+
+    # binarize predictions
+    y_pred[y_pred != y_true] = 0
+    y_pred[y_pred == y_true] = 1
+    
+    ap = 1/y_pred.sum() * (p @ y_pred)
+
+    aps.append(ap)
+
+maP = np.mean(aps)
+
+
 #%%
 cmc = np.zeros(K)
-for k in range(K):
+for k in range(1,K+1):
     # True Positive Identification Rate (TPIR): 
     # Probability of observing the correct identity within the top K ranks
     # CMC Curve: Plots TPIR against ranks
-    cmc[k] = np.sum((y_true == y_pred)[:k])/len((y_true == y_pred)[:k])
+    cmc[k:] = np.sum((y_true == y_pred)[:k])/len((y_true == y_pred)[:k])
 
 
 # recall = recall_score(y_true, y_pred)
