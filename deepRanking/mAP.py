@@ -18,6 +18,8 @@ from nets import EmbeddingNet
 from plots import extract_embeddings
 from autoencoder.data_generator import get_train_test_split_paths
 
+np.random.seed(42069)
+
 print('Getting embeddings')
 model = EmbeddingNet()
 model.load_state_dict(torch.load('models/online_semi_model_margin_0.1_2021-06-13_0.0487loss.pth', map_location=torch.device('cpu')))
@@ -27,7 +29,7 @@ label_encoder = preprocessing.LabelEncoder()
 label_encoder.fit(list(catalog.keys()))
 
 #make the 'normal' datasets:
-train_dataset, test_dataset = make_dataset(label_encoder, n_val_products=100, NoDuplicates=True)
+train_dataset, test_dataset = make_dataset(label_encoder, n_val_products=500, NoDuplicates=True)
 
 dataset = torch.utils.data.ConcatDataset([test_dataset])
 # dataset = torch.utils.data.ConcatDataset([train_dataset, test_dataset])
@@ -64,6 +66,12 @@ for i, embedding in enumerate(embeddings):
     for k in range(1, K+1):
         p[k-1] = np.sum((y_true == y_pred[:k]))/len(y_pred[:k])
 
+        # True Positive Identification Rate (TPIR): 
+        # Probability of observing the correct identity within the top K ranks
+        if y_true in y_pred[:k]:
+            t = np.where(y_pred==y_true)[0][0]
+            cmc[t:] += 1 
+
     # binarize predictions
     y_pred[y_pred != y_true] = 0
     y_pred[y_pred == y_true] = 1
@@ -73,22 +81,21 @@ for i, embedding in enumerate(embeddings):
     aps.append(ap)
 
 maP = np.mean(aps)
+cmc = cmc / np.max(cmc)
 
-
-#%%
-cmc = np.zeros(K)
-for k in range(1,K+1):
-    # True Positive Identification Rate (TPIR): 
-    # Probability of observing the correct identity within the top K ranks
-    # CMC Curve: Plots TPIR against ranks
-    cmc[k:] = np.sum((y_true == y_pred)[:k])/len((y_true == y_pred)[:k])
-
-
-# recall = recall_score(y_true, y_pred)
-# average_precision_score(y_true, y_pred)
-# top_k_accuracy_score(y_true, y_pred, k=2)
 # %%
+print(f'mAP @ k={K}:\t', round(maP*100,2))
+# rank-1
+print('cmc at rank-1: \t ', cmc[0])
+# rank-5
+print('cmc at rank-5: \t ', cmc[4])
+# CMC Curve: Plots TPIR against ranks
 plt.figure()
-plt.plot(cmc)
+plt.plot(range(1,K+1),cmc)
+plt.xticks(range(1,K+1))
+plt.xlabel('Rank')
+plt.ylabel('Identification Accuracy')
+plt.title('CMC Curve')
+plt.ylim(0,1.02)
 plt.show()
 # %%
