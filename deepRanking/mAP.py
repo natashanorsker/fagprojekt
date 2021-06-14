@@ -15,6 +15,30 @@ from dataset import make_dataset, list_paths_labels
 from nets import EmbeddingNet
 from plots import extract_embeddings
 #%%
+
+# train_set, test_set = get_train_test_split_paths()
+# # root folder of project as string
+# root = pathlib.Path(__file__).parent.parent.absolute().as_posix() 
+# # get they product ID's from test path
+# keys = [key[len(root):][6:6+key[len(root):][6:].find('/')] for key in test_set] 
+catalog = dict_from_json('../catalog.json')
+label_encoder = preprocessing.LabelEncoder()
+label_encoder.fit(list(catalog.keys()))
+
+#make the 'normal' datasets:
+# note that since get_train_test_split_paths is used both dataset are test
+train_set, test_set = make_dataset(label_encoder, n_val_products=500, NoDuplicates=True)
+
+# where do we want to search?
+# dataset = torch.utils.data.ConcatDataset([test_dataset])
+dataset = torch.utils.data.ConcatDataset([train_set, test_set])
+
+#make the dataloaders:
+data_loader = torch.utils.data.DataLoader(dataset, batch_size=500, shuffle=False)
+
+label_encoder2 = preprocessing.LabelEncoder()
+label_encoder2.fit(['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings', 'Misc'])
+
 np.random.seed(42069)
 models = os.listdir('models')
 for mod in models:
@@ -23,31 +47,8 @@ for mod in models:
     mpath = 'models/' + mod
     model.load_state_dict(torch.load(mpath, map_location=torch.device('cpu')))
 
-    # train_set, test_set = get_train_test_split_paths()
-    # # root folder of project as string
-    # root = pathlib.Path(__file__).parent.parent.absolute().as_posix() 
-    # # get they product ID's from test path
-    # keys = [key[len(root):][6:6+key[len(root):][6:].find('/')] for key in test_set] 
-    catalog = dict_from_json('../catalog.json')
-    label_encoder = preprocessing.LabelEncoder()
-    label_encoder.fit(list(catalog.keys()))
-
-    #make the 'normal' datasets:
-    # note that since get_train_test_split_paths is used both dataset are test
-    train_set, test_set = make_dataset(label_encoder, n_val_products=500, NoDuplicates=True)
-
-    # where do we want to search?
-    # dataset = torch.utils.data.ConcatDataset([test_dataset])
-    dataset = torch.utils.data.ConcatDataset([train_set, test_set])
-
-    #make the dataloaders:
-    data_loader = torch.utils.data.DataLoader(dataset, batch_size=500, shuffle=False)
-
     embeddings, labels = extract_embeddings(data_loader, model)
 
-    #%%
-    label_encoder2 = preprocessing.LabelEncoder()
-    label_encoder2.fit(['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings', 'Misc'])
     #%%
     K = 20 # number of retrieved items to query image
     cmc = np.zeros(K) # @k
@@ -91,7 +92,6 @@ for mod in models:
     maP = np.mean(aps)
     cmc = cmc / np.max(cmc)
 
-    # %%
     print(f'mAP @ k={K}:\t', round(maP*100,2))
     # rank-1
     print('cmc at rank-1: \t ', cmc[0])
@@ -105,6 +105,6 @@ for mod in models:
     plt.ylabel('Identification Accuracy')
     plt.title('CMC Curve')
     plt.ylim(0,1.02)
-    plt.savefig(f'Figures/cmccurve{mod}')
+    plt.savefig(f'../Figures/cmccurve{mod}')
     plt.show()
 # %%
