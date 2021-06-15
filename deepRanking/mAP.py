@@ -30,7 +30,7 @@ label_encoder.fit(list(catalog.keys()))
 
 #make the 'normal' datasets:
 # note that since get_train_test_split_paths is used both dataset are test
-train_set, test_set = make_dataset(label_encoder, n_val_products=500, NoDuplicates=True)
+train_set, test_set = make_dataset(label_encoder, n_val_products=100, NoDuplicates=False)
 
 # where do we want to search?
 # dataset = torch.utils.data.ConcatDataset([test_set])
@@ -43,7 +43,7 @@ label_encoder2 = preprocessing.LabelEncoder()
 label_encoder2.fit(['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings', 'Misc'])
 
 models = os.listdir('models')
-
+#%%
 def main(mod):
     # print('Getting embeddings')
     model = EmbeddingNet()
@@ -61,13 +61,12 @@ def main(mod):
         emb_label = label_encoder.inverse_transform([labels[i]])[0]
         labelq = labels_from_ids([emb_label])
         dists = np.sum((embeddings - embedding) ** 2, axis=1)
-        closest_ids = np.argsort(dists)[:K] # @k
+        closest_ids = np.argsort(dists)[:K*40] # @k
+        idx = list(set([dataset[k][1] for k in closest_ids]))
+        idx = idx[:K]
+        transform = label_encoder.inverse_transform(idx)
 
-        transform = []  
         p = np.zeros(K)
-        for j in closest_ids:
-            # recs = torch.tensor(dataset[j][0].numpy())
-            transform.append(str(label_encoder.inverse_transform([dataset[j][1]])[0]))
 
         y_true = label_encoder2.transform(labelq)
         y_pred = labels_from_ids(transform)
@@ -112,9 +111,9 @@ def main(mod):
     plt.savefig(f'../Figures/cmccurve{mod[:-23]}.png',dpi=200)
     plt.show()
 
+# %%
 for mod in models: 
     main(mod)
-# %%
 # with concurrent.futures.ThreadPoolExecutor() as executor:
     # executor.map(main, models)
     
