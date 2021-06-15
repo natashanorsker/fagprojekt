@@ -6,6 +6,7 @@ import os
 import pathlib
 import numpy as np
 import torch
+import concurrent.futures
 from matplotlib import pyplot as plt
 from sklearn import preprocessing
 
@@ -41,7 +42,8 @@ label_encoder2.fit(['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces &
 
 np.random.seed(42069)
 models = os.listdir('models')
-for mod in models:
+
+def main(mod):
     # print('Getting embeddings')
     model = EmbeddingNet()
     mpath = 'models/' + mod
@@ -92,6 +94,7 @@ for mod in models:
     maP = np.mean(aps)
     cmc = cmc / np.max(cmc)
 
+    print(f'model: {mod}')
     print(f'mAP @ k={K}:\t', round(maP*100,2))
     # rank-1
     print('cmc at rank-1: \t ', cmc[0])
@@ -107,4 +110,8 @@ for mod in models:
     plt.ylim(0,1.02)
     plt.savefig(f'../Figures/cmccurve{mod}')
     plt.show()
+
 # %%
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    executor.map(main, models)
+    
