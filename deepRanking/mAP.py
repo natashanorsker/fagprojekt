@@ -115,8 +115,6 @@ def main(mod):
     plt.show()
 
 # %%
-# for mod in models: 
-#     main(mod)
 with concurrent.futures.ProcessPoolExecutor() as executor:
     executor.map(main, models)
     
