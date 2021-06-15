@@ -48,14 +48,14 @@ def plot_embeddings(embeddings, targets, encoder, xlim=None, ylim=None):
     plt.show()
 
 
-def extract_embeddings(dataloader, model):
+def extract_embeddings(dataloader, model, force_no_cuda=False):
     with torch.no_grad():
         model.eval()
         embeddings = np.zeros((len(dataloader.dataset), 10))
         labels = np.zeros(len(dataloader.dataset))
         k = 0
         for images, target in dataloader:
-            if cuda:
+            if cuda and not force_no_cuda:
                 images = images.cuda()
             embeddings[k:k + len(images)] = model.get_embedding(images).data.cpu().numpy()
             labels[k:k + len(images)] = target.numpy()

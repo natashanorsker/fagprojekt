@@ -1,4 +1,4 @@
-from utilities import dict_from_json, trim, list_pictures, info_from_id, sort_by_category, show_images
+from utilities import dict_from_json, trim, list_pictures, sort_by_category, show_images
 import os
 import json
 import requests
@@ -20,8 +20,6 @@ headers = ['Mozilla/5.0 CK={} (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like
            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
            'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148']
 
-has_no_class = dict_from_json('../id_not_in_masterfile.json')
-
 def data_retriever(directory_path, catalog):
     '''
     uses the 'product_image_url'-s from the catalog to download all the product images for every product in the catalog.
@@ -37,7 +35,7 @@ def data_retriever(directory_path, catalog):
     s.max_redirects = 30
 
     # Parent Directory path (make a DATA directory for storing the data)
-    data_dir = os.path.join(directory_path, '../new_data')
+    data_dir = os.path.join(directory_path, '../data')
 
     try:
         os.chdir(data_dir)
@@ -184,7 +182,7 @@ if __name__ == "__main__":
     # important in order to get the same rotated images:
     random.seed(420)
     seed(420)
-    has_no_class = dict_from_json('../id_not_in_masterfile.json')
+    has_no_class = dict_from_json('id_not_in_masterfile.json')
     catalog = dict_from_json("../catalog.json")
 
     #removing the products that are not in the masterfile from the catalog
