@@ -18,13 +18,13 @@ import torch
 import torch.optim as optim  # For all Optimization algorithms, SGD, Adam, etc.
 from torch.utils.data import (
     DataLoader,
-)  # Gives easier dataset managment and creates mini batches
+)  # Gives easier dataset management and creates mini batches
 from datetime import date   
 
 cuda = torch.cuda.is_available()
 #print('device:', str(torch.cuda.get_device_name()))
 # PARAMETERS TO SEARCH:
-param_grid = {'n_epochs': [20], 'lr': [0.0001],'margin':[0.1,0.2,0.5,1],'kind':'random'}
+param_grid = {'n_epochs': [20], 'lr': [0.0001],'margin':[0.1,0.2,0.5,1]}
 
 # PARAMETERS THAT CAN BE MANUALLY ADJUSTED:
 # datasets:
@@ -66,19 +66,27 @@ for experiment in list(ParameterGrid(param_grid)):
     # make the model:
     embedding_net = EmbeddingNet()
     model = embedding_net
-    # HardestNegativeTripletSelector, RandomNegativeTripletSelector, SemihardNegativeTripletSelector
-    loss_fn = OnlineTripletLoss(experiment['margin'], RandomNegativeTripletSelector(experiment['margin']))
-    optimizer = optim.Adam(model.parameters(), lr=experiment['lr'], weight_decay=1e-4)
-    scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
 
-    if cuda:
-        model.cuda()
+    # make the sampling methods:
+    random = RandomNegativeTripletSelector(experiment['margin'])
+    semi_hard = SemihardNegativeTripletSelector(experiment['margin'])
+    hard = HardestNegativeTripletSelector(experiment['margin'])
 
-    # make the whole grid thing here
-    run = Experiment(train_loader=online_train_loader, val_loader=online_test_loader, model=model, label_encoder=label_encoder, loss_fn=loss_fn,
-                     optimizer=optimizer, scheduler=scheduler, cuda=cuda, kind=param_grid['kind'],
-                     to_tensorboard=True, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0, margin=experiment['margin'], lr=experiment['lr'],
-                     n_epochs=experiment['n_epochs'])
+    for sampling_method in [random, semi_hard, hard]:
 
-    experiments.append(run)
-    torch.save(run.model.state_dict(), 'models/online_{}_model_margin_{}_{}_{}loss.pth'.format(param_grid['kind'],experiment['margin'], date.today(),round(run.val_loss, 4)))
+        # HardestNegativeTripletSelector, RandomNegativeTripletSelector, SemihardNegativeTripletSelector
+        loss_fn = OnlineTripletLoss(experiment['margin'], sampling_method)
+        optimizer = optim.Adam(model.parameters(), lr=experiment['lr'], weight_decay=1e-4)
+        scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
+
+        if cuda:
+            model.cuda()
+
+        # make the whole grid thing here
+        run = Experiment(train_loader=online_train_loader, val_loader=online_test_loader, model=model, label_encoder=label_encoder, loss_fn=loss_fn,
+                         optimizer=optimizer, scheduler=scheduler, cuda=cuda, kind=sampling_method.name,
+                         to_tensorboard=True, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0, margin=experiment['margin'], lr=experiment['lr'],
+                         n_epochs=experiment['n_epochs'])
+
+        experiments.append(run)
+        torch.save(run.model.state_dict(), 'models/online_{}_model_margin_{}_{}_{}loss.pth'.format(sampling_method.name,experiment['margin'], date.today(),round(run.val_loss, 4)))

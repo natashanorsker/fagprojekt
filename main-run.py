@@ -52,14 +52,13 @@ crop_img = detectron2segment.inference.extractjewel(im)
 crop_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB) 
 query_img = Image.fromarray(crop_img)
 im = Image.open(impath)
-
 #%% Step 2 testing. this is for proving that the same image is found
-testim = dataset[71][0].numpy()
+testim = dataset[70][0].numpy()    
 testim = np.asarray(np.interp(testim, (0, 1), (0,255)),dtype=np.uint8)
 testim = np.swapaxes(testim,0,1)
 testim = np.swapaxes(testim,1,2)
-#im = Image.fromarray(testim)
-#query_img = Image.fromarray(testim)
+im = Image.fromarray(testim)
+query_img = Image.fromarray(testim)
 #%% Step 3 get embeddings for new image
 print('Searching for similar images')
 model.eval()   # apparently does more than to print out the model. I think it freezes som weights or something
@@ -109,10 +108,8 @@ for i in range(n_neighbor):
     print(f'{str(url)}')
 
 plt.tight_layout()
-plt.show()
 plt.savefig('nearest.png',dpi=200)
+plt.show()
 
 print('Outputted to nearest.png')
-# %%
-
 # %%

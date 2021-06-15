@@ -2,10 +2,11 @@ import os
 
 import cv2
 import numpy.random
+import numpy as np
 from deepRanking.nets import EmbeddingNet
 import torch
 import detectron2segment.inference
-from autoencoder.data_generator import get_train_test_split_paths
+from autoencoder.train_test import get_train_test_split_paths
 from deepRanking.dataset import make_dataset
 from deepRanking.nets import EmbeddingNet
 from deepRanking.plots import extract_embeddings
