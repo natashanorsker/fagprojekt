@@ -15,6 +15,8 @@ from autoencoder.train_test import get_train_test_split_paths
 from dataset import make_dataset, list_paths_labels
 from nets import EmbeddingNet
 from plots import extract_embeddings
+
+np.random.seed(42069)
 #%%
 
 # train_set, test_set = get_train_test_split_paths()
@@ -31,7 +33,7 @@ label_encoder.fit(list(catalog.keys()))
 train_set, test_set = make_dataset(label_encoder, n_val_products=500, NoDuplicates=True)
 
 # where do we want to search?
-# dataset = torch.utils.data.ConcatDataset([test_dataset])
+# dataset = torch.utils.data.ConcatDataset([test_set])
 dataset = torch.utils.data.ConcatDataset([train_set, test_set])
 
 #make the dataloaders:
@@ -40,7 +42,6 @@ data_loader = torch.utils.data.DataLoader(dataset, batch_size=500, shuffle=False
 label_encoder2 = preprocessing.LabelEncoder()
 label_encoder2.fit(['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings', 'Misc'])
 
-np.random.seed(42069)
 models = os.listdir('models')
 
 def main(mod):
@@ -87,7 +88,7 @@ def main(mod):
         y_pred[y_pred != y_true] = 0
         y_pred[y_pred == y_true] = 1
         
-        ap = 1/y_pred.sum() * (p @ y_pred)
+        ap = 1/(y_pred.sum() + 1e-6) * (p @ y_pred)
 
         aps.append(ap)
 
@@ -108,10 +109,12 @@ def main(mod):
     plt.ylabel('Identification Accuracy')
     plt.title('CMC Curve')
     plt.ylim(0,1.02)
-    plt.savefig(f'../Figures/cmccurve{mod}')
+    plt.savefig(f'../Figures/cmccurve{mod[:-23]}.png',dpi=200)
     plt.show()
 
+for mod in models: 
+    main(mod)
 # %%
-with concurrent.futures.ThreadPoolExecutor() as executor:
-    executor.map(main, models)
+# with concurrent.futures.ThreadPoolExecutor() as executor:
+    # executor.map(main, models)
     
