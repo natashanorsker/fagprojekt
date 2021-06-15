@@ -12,3 +12,4 @@ test-env/
 deepRanking/runs/
 survey_images/
 *.pyc
+.Rproj.user
