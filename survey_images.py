@@ -30,7 +30,6 @@ for d in os.listdir("Questionnaire_imgs"):
         cv2.imwrite(os.path.join(dd, "query.jpg"), im)
 
 
-
 #ugly hack
 def extract_embeddings(dataloader, model, force_no_cuda=False):
     with torch.no_grad():
@@ -64,14 +63,11 @@ os.chdir(dir_path)
 vae_embeddings = np.load(os.path.join("autoencoder", "models", model_name, "encodings.npy"))
 vae_labels = np.load(os.path.join("autoencoder", "models", model_name, "labels.npy"), allow_pickle=True)
 
-# deep ranking setup
-model = EmbeddingNet()
-model.load_state_dict(torch.load('deepRanking/models/online_model7-6_0.3979loss.pth', map_location=torch.device('cpu')))
-
 # load pytorch tensors and model
 # TODO: in the future the tensors should just be loaded from a file
 model = EmbeddingNet()
-model.load_state_dict(torch.load('deepRanking/models/online_model7-6_0.3979loss.pth', map_location=torch.device('cpu')))
+model.load_state_dict(torch.load('deepRanking/models/online_semi_model_margin_0.1_2021-06-13_0.0487loss.pth',
+                                 map_location=torch.device('cpu')))
 model.eval()
 
 catalog = dict_from_json('catalog.json')
@@ -85,6 +81,9 @@ train_dataset, test_dataset = make_dataset(label_encoder, n_val_products=100, No
 data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=500, shuffle=False)
 
 embeddingsP, labelsP = extract_embeddings(data_loader, model, force_no_cuda=True)
+
+np.save("embeddings.npy", embeddingsP)
+np.save("labels.npy", labelsP)
 
 for d in os.listdir("survey_images"):
     print(d)
@@ -111,13 +110,21 @@ for d in os.listdir("survey_images"):
 
     dists = np.sum((vae_embeddings - target_enc) ** 2, axis=1)
 
-    closest_ids = np.argsort(dists)[:5]
+    sort_idx = np.argsort(dists)
 
-    recs = vae_labels[closest_ids]
+    sorted_labels = vae_labels[sort_idx]
+
+    sorted_labels_cut = np.array([label[:-10] for label in sorted_labels])
+
+    _, unique = np.unique(sorted_labels_cut, return_index=True)
+
+    recs = sorted_labels[np.sort(unique)][:5]
+
 
     for i, rec in enumerate(recs):
         p = "/".join(rec.split(os.sep)[1:])
         p = p[:-10] + f"_00_OG.jpg"
+        print(p)
         im = cv2.imread(p)
         p = os.path.join("survey_images", d, "autoencoder", f"{i}_" + p.split(os.sep)[-1])
         cv2.imwrite(p, im)
@@ -137,9 +144,15 @@ for d in os.listdir("survey_images"):
 
     dists = np.sum((embeddingsP - embedding.numpy()) ** 2, axis=1)
 
-    closest_ids = np.argsort(dists)[:5]
+    sort_idx = np.argsort(dists)
 
-    recs = np.array(train_dataset.list_IDs)[closest_ids]  #this is not possible # .numpy() maybe needed
+    sorted_labels = np.array(train_dataset.list_IDs)[sort_idx]
+
+    sorted_labels_cut = np.array([label[:-10] for label in sorted_labels])
+
+    _, unique = np.unique(sorted_labels_cut, return_index=True)
+
+    recs = sorted_labels[np.sort(unique)][:5]
 
     for i, rec in enumerate(recs):
         p = "/".join(rec.split(os.sep))
@@ -154,10 +167,4 @@ for d in os.listdir("survey_images"):
 
         p = os.path.join("survey_images", d, "deepranking", f"{i}_" + p.split(os.sep)[-1])
 
-        #cur_dir = os.path.dirname(os.path.abspath(__file__))
-        #print(os.path.split(p)[0])
-        #print(os.path.split(p)[1])
-        #os.chdir(os.path.split(p)[0])
-        #cv2.imwrite(os.path.split(p)[1], im)
         cv2.imwrite(p, im)
-        #os.chdir(cur_dir)
