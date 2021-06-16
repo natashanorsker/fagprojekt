@@ -63,6 +63,29 @@ def labels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_e
     return labels
 
 
+def sublabels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_encoder=None):
+    # should return the category in a string
+    df = pd.read_csv(master_file_path, sep=';')
+    df.columns = df.columns.str.lower()
+
+    if label_encoder:
+        ids = label_encoder.inverse_transform(ids)
+
+    labels = []
+    for id in ids:
+        try:
+            label = df['item sub-category'].loc[df.key == id].values[0].lower()
+
+        except:
+            print("Can't find info on product: {}".format(id))
+            label = 'Set'
+        labels.append(label)
+    return labels
+
+
+
+
+
 def sort_by_category(catalog, category='item category', master_file_path='data_code/masterdata.csv', save=True):
     # read the master file:
 
@@ -172,5 +195,6 @@ if __name__ == "__main__":
     catalog = dict_from_json()
    # sorted, not_found = sort_by_category(catalog)
     #occurrence_plot(catalog)
-    number_per_category_plot(catalog)
+    #number_per_category_plot(catalog)
+    sublabels_from_ids(['590702HV-19'], 'data_code/masterdata.csv')
     pass
