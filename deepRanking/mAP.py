@@ -9,8 +9,9 @@ import torch
 import concurrent.futures
 from matplotlib import pyplot as plt
 from sklearn import preprocessing
+import pandas as pd
 
-from utilities import dict_from_json, labels_from_ids
+from utilities import dict_from_json, labels_from_ids, sublabels_from_ids
 from autoencoder.train_test import get_train_test_split_paths
 from dataset import make_dataset, list_paths_labels
 from nets import EmbeddingNet
@@ -18,7 +19,6 @@ from plots import extract_embeddings
 
 np.random.seed(42069)
 #%%
-
 
 catalog = dict_from_json('../catalog.json')
 label_encoder = preprocessing.LabelEncoder()
@@ -36,7 +36,11 @@ data_loader = torch.utils.data.DataLoader(dataset, batch_size=500, shuffle=False
 data_loader_test = torch.utils.data.DataLoader(test_set, batch_size=500, shuffle=False)
 
 label_encoder2 = preprocessing.LabelEncoder()
-label_encoder2.fit(['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings', 'Misc'])
+df = pd.read_csv('data_code/masterdata.csv', sep=';') 
+df.columns = df.columns.str.lower()
+subcategories = list(set(df['item sub-category']))
+categories = ['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings', 'Misc']
+label_encoder2.fit(subcategories)
 
 models = os.listdir('models')
 
@@ -57,7 +61,7 @@ def main(mod):
     for i, embedding in enumerate(test_embeddings):
         # query
         emb_label = label_encoder.inverse_transform([test_labels[i]])[0]
-        labelq = labels_from_ids([emb_label])
+        labelq = sublabels_from_ids([emb_label])
         dists = np.sum((all_embeddings - embedding) ** 2, axis=1)
         closest_ids = np.argsort(dists)[:K*40] # @k
         idx = list(set([dataset[k][1] for k in closest_ids]))
@@ -106,7 +110,7 @@ def main(mod):
     plt.ylabel('Identification Accuracy')
     plt.title('CMC Curve')
     plt.ylim(0,1.02)
-    plt.savefig(f'../Figures/cmccurve{mod[:-23]}.png',dpi=200)
+    plt.savefig(f'../Figures/subcategorycmccurve{mod[:-23]}.png',dpi=200)
     plt.show()
 
 # %%
