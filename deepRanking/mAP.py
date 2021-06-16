@@ -19,17 +19,12 @@ from plots import extract_embeddings
 np.random.seed(42069)
 #%%
 
-# train_set, test_set = get_train_test_split_paths()
-# # root folder of project as string
-# root = pathlib.Path(__file__).parent.parent.absolute().as_posix() 
-# # get they product ID's from test path
-# keys = [key[len(root):][6:6+key[len(root):][6:].find('/')] for key in test_set] 
+
 catalog = dict_from_json('../catalog.json')
 label_encoder = preprocessing.LabelEncoder()
 label_encoder.fit(list(catalog.keys()))
 
 #make the 'normal' datasets:
-# note that since get_train_test_split_paths is used both dataset are test
 train_set, test_set = make_dataset(label_encoder, n_val_products=100, NoDuplicates=False)
 
 # where do we want to search?
@@ -115,8 +110,6 @@ def main(mod):
     plt.show()
 
 # %%
-for mod in models: 
-    main(mod)
-# with concurrent.futures.ProcessPoolExecutor() as executor:
-#     executor.map(main, models)
+with concurrent.futures.ProcessPoolExecutor() as executor:
+    executor.map(main, models)
     
