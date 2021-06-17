@@ -92,6 +92,7 @@ for d in os.listdir("survey_images"):
 
     try:
         query_img = detectron2segment.inference.extractjewel(query_img)
+        cv2.imwrite(os.path.join("survey_images", d, "cropped.jpg"), query_img)
     except Exception:
         query_img = query_img
 
@@ -124,7 +125,6 @@ for d in os.listdir("survey_images"):
     for i, rec in enumerate(recs):
         p = "/".join(rec.split(os.sep)[1:])
         p = p[:-10] + f"_00_OG.jpg"
-        print(p)
         im = cv2.imread(p)
         p = os.path.join("survey_images", d, "autoencoder", f"{i}_" + p.split(os.sep)[-1])
         cv2.imwrite(p, im)
