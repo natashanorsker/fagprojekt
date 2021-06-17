@@ -43,6 +43,7 @@ class Experiment:
         self.val_loss = 0
         self.train_loss = 0
         self.kind = kind
+        self.current_epoch = 1
 
 
         if self.to_tensorboard:
@@ -142,13 +143,13 @@ class Experiment:
 
         total_loss /= (batch_idx + 1)
         if self.to_tensorboard:
-            img_grid = make_triplet_grid(triplet_ids, data)
-            self.writer.add_image("Training input triplets", img_grid, global_step=self.step)
+            #img_grid = make_triplet_grid(triplet_ids, data)
+            #self.writer.add_image("Training input triplets", img_grid, global_step=self.step)
 
             # add the weights from the last layer as a histogram:
-            self.writer.add_histogram("Weights from the last linear layer", self.model.fc[4].weight,
-                                      global_step=self.step)
-            # add the training loss for the specific batch:
+            #self.writer.add_histogram("Weights from the last linear layer", self.model.fc[4].weight, global_step=self.step)
+
+            # add the training loss for the specific epoch:
             self.writer.add_scalar("Training loss per epoch", total_loss, global_step=self.step)  # should be running loss or not?
 
             self.step += 1
@@ -188,11 +189,12 @@ class Experiment:
                     metric(outputs, target, loss_outputs)
 
         if self.to_tensorboard:
-            # make 3d plot of embeddings
-            features = loss_inputs[0]  # the embeddings
-            labels = loss_inputs[1].tolist()  # the product ids
-            label_img = data[0]  # the original images
-            self.writer.add_embedding(features, metadata=labels, label_img=label_img, global_step=self.step)
+            if self.current_epoch == self.n_epochs:
+                # make 3d plot of embeddings
+                features = loss_inputs[0]  # the embeddings
+                labels = loss_inputs[1].tolist()  # the product ids
+                label_img = data[0]  # the original images
+                self.writer.add_embedding(features, metadata=labels, label_img=label_img, global_step=self.step)
 
             #self.step += 1
 
