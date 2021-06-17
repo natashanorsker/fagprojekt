@@ -22,7 +22,7 @@ def pdist(vectors):
 
 
 class Experiment:
-    def __init__(self, train_loader, val_loader, model, label_encoder, loss_fn, optimizer, scheduler, cuda, kind, log_interval=50,
+    def __init__(self, train_loader, val_loader, model, label_encoder, loss_fn, optimizer, scheduler, cuda, kind, log_interval=10,
                  to_tensorboard=True, metrics=[], start_epoch=0, margin=1, lr=0.01, n_epochs=10):
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -39,7 +39,7 @@ class Experiment:
         self.start_epoch = start_epoch
         self.margin = margin
         self.lr = lr
-        self.step = 0
+        self.step = 1
         self.val_loss = 0
         self.train_loss = 0
         self.kind = kind
@@ -84,9 +84,9 @@ class Experiment:
 
             print(message)
 
-            if self.to_tensorboard:
-                self.writer.add_hparams({'n_epochs': self.n_epochs, 'lr': self.lr, 'margin': self.margin},
-                                        {'Avr. Training Loss': sum(training_losses) / len(training_losses)})
+        if self.to_tensorboard:
+            self.writer.add_hparams({'n_epochs': self.n_epochs, 'lr': self.lr, 'margin': self.margin, 'sampling_method': self.kind},
+                                    {'Avr. Training Loss': sum(training_losses) / len(training_losses), 'Avr. Val Loss': sum(val_losses) / len(val_losses)})
 
         return sum(training_losses) / len(training_losses), sum(val_losses) / len(val_losses)
 
@@ -127,18 +127,6 @@ class Experiment:
             triplet_ids = loss_outputs[2]
             self.optimizer.step()
 
-            if self.to_tensorboard:
-                if batch_idx == len(self.train_loader) - 1:
-                    # create image grid of input images from the batch
-                    img_grid = make_triplet_grid(triplet_ids, data)
-                    self.writer.add_image("Training input triplets", img_grid, global_step=batch_idx)
-
-                # add the weights from the last layer as a histogram:
-                self.writer.add_histogram("Weights from the last linear layer", self.model.fc[4].weight,
-                                          global_step=self.step)
-                # add the training loss for the specific batch:
-                self.writer.add_scalar("Training loss", loss, global_step=self.step)  # should be running loss or not?
-
             for metric in self.metrics:
                 metric(outputs, target, loss_outputs)
 
@@ -152,9 +140,19 @@ class Experiment:
                 print(message)
                 losses = []
 
+        total_loss /= (batch_idx + 1)
+        if self.to_tensorboard:
+            img_grid = make_triplet_grid(triplet_ids, data)
+            self.writer.add_image("Training input triplets", img_grid, global_step=self.step)
+
+            # add the weights from the last layer as a histogram:
+            self.writer.add_histogram("Weights from the last linear layer", self.model.fc[4].weight,
+                                      global_step=self.step)
+            # add the training loss for the specific batch:
+            self.writer.add_scalar("Training loss per epoch", total_loss, global_step=self.step)  # should be running loss or not?
+
             self.step += 1
 
-        total_loss /= (batch_idx + 1)
         return total_loss, self.metrics
 
     def test_epoch(self):
@@ -189,14 +187,14 @@ class Experiment:
                 for metric in self.metrics:
                     metric(outputs, target, loss_outputs)
 
-                if self.to_tensorboard:
-                    # make 3d plot of embeddings
-                    features = loss_inputs[0]  # the embeddings
-                    labels = loss_inputs[1].tolist()  # the product ids
-                    label_img = data[0]  # the original images
-                    self.writer.add_embedding(features, metadata=labels, label_img=label_img, global_step=batch_idx)
+        if self.to_tensorboard:
+            # make 3d plot of embeddings
+            features = loss_inputs[0]  # the embeddings
+            labels = loss_inputs[1].tolist()  # the product ids
+            label_img = data[0]  # the original images
+            self.writer.add_embedding(features, metadata=labels, label_img=label_img, global_step=self.step)
 
-                self.step += 1
+            #self.step += 1
 
         return val_loss, self.metrics
 
