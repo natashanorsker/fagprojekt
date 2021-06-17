@@ -24,13 +24,13 @@ from datetime import date
 cuda = torch.cuda.is_available()
 #print('device:', str(torch.cuda.get_device_name()))
 # PARAMETERS TO SEARCH:
-param_grid = {'n_epochs': [2], 'lr': [0.0001],'margin':[1]}
+param_grid = {'n_epochs': [1, 15, 25, 40], 'lr': [0.0001, 0.005, 0.1],'margin':[1]}
 
 # PARAMETERS THAT CAN BE MANUALLY ADJUSTED:
 # datasets:
-n_test_products = 100 # the amount of products that goes into the test dataset (sat very high for debugging)
-n_train_classes = 20  # the amount of products per batch in the balancedbatch sampler in the train dataloader
-n_test_classes = 20  # the amount of products per batch in the balancedbatch sampler in the test dataloader
+n_test_products = 200 # the amount of products that goes into the test dataset
+n_train_classes = 40  # the amount of products per batch in the balancedbatch sampler in the train dataloader
+n_test_classes = 40  # the amount of products per batch in the balancedbatch sampler in the test dataloader
 n_samples = 20
 
 # model training:
