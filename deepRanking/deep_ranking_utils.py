@@ -43,6 +43,7 @@ class Experiment:
         self.val_loss = 0
         self.train_loss = 0
         self.kind = kind
+        self.current_epoch = 1
 
 
         if self.to_tensorboard:
@@ -62,12 +63,15 @@ class Experiment:
 
         for epoch in range(0, self.start_epoch):
             self.scheduler.step()
+            self.current_epoch += 1
 
         for epoch in range(self.start_epoch, self.n_epochs):
             self.scheduler.step()
 
             train_loss, metrics = self.train_epoch()
             training_losses += [train_loss]
+            
+            self.current_epoch += 1
 
             message = 'Epoch: {}/{}. Train set: Average loss: {:.4f}'.format(epoch + 1, self.n_epochs, train_loss)
             for metric in metrics:
@@ -142,13 +146,13 @@ class Experiment:
 
         total_loss /= (batch_idx + 1)
         if self.to_tensorboard:
-            img_grid = make_triplet_grid(triplet_ids, data)
-            self.writer.add_image("Training input triplets", img_grid, global_step=self.step)
+            #img_grid = make_triplet_grid(triplet_ids, data)
+            #self.writer.add_image("Training input triplets", img_grid, global_step=self.step)
 
             # add the weights from the last layer as a histogram:
-            self.writer.add_histogram("Weights from the last linear layer", self.model.fc[4].weight,
-                                      global_step=self.step)
-            # add the training loss for the specific batch:
+            #self.writer.add_histogram("Weights from the last linear layer", self.model.fc[4].weight, global_step=self.step)
+
+            # add the training loss for the specific epoch:
             self.writer.add_scalar("Training loss per epoch", total_loss, global_step=self.step)  # should be running loss or not?
 
             self.step += 1
@@ -188,11 +192,12 @@ class Experiment:
                     metric(outputs, target, loss_outputs)
 
         if self.to_tensorboard:
-            # make 3d plot of embeddings
-            features = loss_inputs[0]  # the embeddings
-            labels = loss_inputs[1].tolist()  # the product ids
-            label_img = data[0]  # the original images
-            self.writer.add_embedding(features, metadata=labels, label_img=label_img, global_step=self.step)
+            if self.current_epoch == self.n_epochs:
+                # make 3d plot of embeddings
+                features = loss_inputs[0]  # the embeddings
+                labels = loss_inputs[1].tolist()  # the product ids
+                label_img = data[0]  # the original images
+                self.writer.add_embedding(features, metadata=labels, label_img=label_img, global_step=self.step)
 
             #self.step += 1
 
@@ -389,10 +394,3 @@ def SemihardNegativeQuadletSelector(margin, label_encoder, cpu=False): return Fu
                                                                                                    x: semihard_negative(
                                                                                                    x, margin),
                                                                                                cpu=cpu, label_encoder=label_encoder)
-
-
-
-
-
-
-
