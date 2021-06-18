@@ -33,6 +33,7 @@ The dataset is not stored in this repo but should be located like this. It will 
 fagprojekt
 └───data
 ```
+when pulling, remember to `git lfs pull` to get the detectron2 model file, otherwise cropping is not possible
 
 # Dependencies
 

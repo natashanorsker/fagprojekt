@@ -81,9 +81,7 @@ def sublabels_from_ids(ids, master_file_path='../data_code/masterdata.csv', labe
         labels.append(label)
     return labels
 
-
-
-def sublabels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_encoder=None):
+def labels_and_metals_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_encoder=None):
     # should return the category in a string
     df = pd.read_csv(master_file_path, sep=';')
     df.columns = df.columns.str.lower()
@@ -94,16 +92,22 @@ def sublabels_from_ids(ids, master_file_path='../data_code/masterdata.csv', labe
     labels = []
     for id in ids:
         try:
-            label = df['item sub-category'].loc[df.key == id].values[0].lower()
+            cat = df['item category'].loc[df.key == id].values[0].lower()
+            metal = df['metal'].loc[df.key == id].values[0].lower()
+            if 'and' in metal:
+                metal = 'twotone'
+            if 'Pandora Shine' in metal:
+                metal = 'Pandora Shine'
+            if 'Gold' in metal:
+                
+            label = cat + metal
 
         except:
             print("Can't find info on product: {}".format(id))
             label = 'Set'
+
         labels.append(label)
     return labels
-
-
-
 
 
 def sort_by_category(catalog, category='item category', master_file_path='data_code/masterdata.csv', save=True):

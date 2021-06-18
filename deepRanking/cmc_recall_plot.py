@@ -2,14 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
+dir = 'map_npz/categories'
 models = os.listdir('models')
-npz_files = os.listdir('map_npz')
+npz_files = os.listdir(dir)
 
 K = 20
 cmcs = np.zeros((len(models), K))
 rss = np.zeros((len(models), K))
 
 for i, file in enumerate(npz_files):
+    file = dir + file
     f = np.load(file)
     cmcs[i, :] = f['cmcs']
     rss[i, :] = f['rss']
@@ -27,7 +29,7 @@ plt.ylabel('Identification Accuracy')
 plt.title('CMC Curve')
 plt.legend(leg)
 plt.ylim(0,1.02)
-plt.savefig('../Figures/subcategorycmccurve.png',dpi=200)
+plt.savefig('../Figures/categorycmcc.pdf')
 plt.show()
 
 plt.figure()
@@ -38,5 +40,5 @@ plt.ylabel('Recall')
 plt.title('Recall at K')
 plt.legend(leg)
 plt.ylim(0,1.02)
-plt.savefig('../Figures/rekallatK.png',dpi=200)
+plt.savefig('../Figures/rekallatKcategories.pdf')
 plt.show()
