@@ -199,13 +199,25 @@ def number_per_category_plot(catalog):
 
     cats, counts = np.unique(all_cats, return_counts=True)
 
+    fig = plt.figure(figsize=(10, 5))
 
-    sns.set_style('whitegrid')
-    sns.barplot(x=list(range(len(cats))), y=counts)
+    # creating the bar plot
+    plt.bar(cats, counts, alpha=0.6,
+            width=0.5, color=['mediumseagreen', 'green', 'lightseagreen', 'darkcyan', 'blue', 'navy'])
     plt.xlabel('Categories')
     plt.ylabel('Number of products')
     plt.xticks(list(range(len(cats))), list(cats))
     plt.show()
+
+    '''
+    #plt.style.use('seaborn')
+    #sns.set_style('dark')
+    sns.barplot(x=list(range(len(cats))), y=counts,saturation=.5)
+    plt.xlabel('Categories')
+    plt.ylabel('Number of products')
+    plt.xticks(list(range(len(cats))), list(cats))
+    plt.show()
+    '''
 
 
 
@@ -215,6 +227,6 @@ if __name__ == "__main__":
     catalog = dict_from_json()
    # sorted, not_found = sort_by_category(catalog)
     #occurrence_plot(catalog)
-    #number_per_category_plot(catalog)
-    sublabels_from_ids(['590702HV-19'], 'data_code/masterdata.csv')
+    number_per_category_plot(catalog)
+    #sublabels_from_ids(['590702HV-19'], 'data_code/masterdata.csv')
     pass
