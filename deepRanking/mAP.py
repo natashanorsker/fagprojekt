@@ -23,7 +23,7 @@ label_encoder = preprocessing.LabelEncoder()
 label_encoder.fit(list(catalog.keys()))
 
 #make the 'normal' datasets:
-train_set, test_set = make_dataset(label_encoder, n_val_products=100, NoDuplicates=False)
+train_set, test_set = make_dataset(label_encoder, n_val_products=30, NoDuplicates=False)
 
 # where do we want to search?
 # dataset = torch.utils.data.ConcatDataset([test_set])
@@ -39,12 +39,10 @@ df.columns = df.columns.str.lower()
 subcategories = list(set(df['item sub-category']))
 subcategories = [i.lower() for i in subcategories]
 categories = ['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings', 'Misc']
-label_encoder2.fit(subcategories)
+label_encoder2.fit(categories) # change to subcategories here
 
 models = os.listdir('models')
 K = 20
-rss = np.zeros(K)
-cmcs = np.zeros(K)
 #%%
 def main(mod):
     # print('Getting embeddings')
@@ -63,7 +61,7 @@ def main(mod):
     for i, embedding in enumerate(test_embeddings):
         # query
         emb_label = label_encoder.inverse_transform([test_labels[i]])[0]
-        labelq = sublabels_from_ids([emb_label])
+        labelq = labels_from_ids([emb_label]) # change to sublabels here
         dists = np.sum((all_embeddings - embedding) ** 2, axis=1)
         closest_ids = np.argsort(dists)[:K*40] # @k
         idx = list(set([dataset[k][1] for k in closest_ids]))
@@ -74,16 +72,17 @@ def main(mod):
         r = np.zeros(K)
 
         y_true = label_encoder2.transform(labelq)
-        y_pred = sublabels_from_ids(transform)
+        y_pred = labels_from_ids(transform) # change to sublabels here
         y_pred = label_encoder2.transform(np.array(y_pred).ravel())
 
+        # k ranking
         for k in range(1, K+1):
             tp = np.sum((y_true == y_pred[:k]))
             fn = np.sum((y_true == y_pred))
 
             p[k-1] = tp/len(y_pred[:k])
             # fraction of objects predicted to be positive among all positive objects
-            r[k-1] = tp/(tp + fn)
+            r[k-1] = tp/(tp + fn + 1e-6)
             # True Positive Identification Rate (TPIR): 
             # Probability of observing the correct identity within the top K ranks
             if y_true in y_pred[:k]:
@@ -99,10 +98,10 @@ def main(mod):
         aps.append(ap)
         rs[i, :] = r
 
-    rss[:] = np.mean(rs, axis=0)
+    rss = np.mean(rs, axis=0)
     maP = np.mean(aps)
     cmc = cmc / np.max(cmc)
-    cmcs[:] = (cmc)
+    cmcs = cmc
 
     print(f'model: {mod}')
     print(f'mAP @ k={K}, cmc at rank-1, cmc at rank-5')
@@ -110,10 +109,10 @@ def main(mod):
 
     # log
     try:
-        np.savez('map_npz/' + mod, rss=rss, cmcs=cmcs)
+        np.savez('map_npz/categories/' + mod, rss=rss, cmcs=cmcs)
     except FileNotFoundError:
-        os.mkdir('map_npz')
-        np.savez('map_npz/' + mod, rss=rss, cmcs=cmcs)
+        os.mkdir('map_npz/categories/')
+        np.savez('map_npz/categories/' + mod, rss=rss, cmcs=cmcs)
 
 # %%
 with concurrent.futures.ProcessPoolExecutor() as executor:
