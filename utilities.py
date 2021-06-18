@@ -94,13 +94,31 @@ def labels_and_metals_from_ids(ids, master_file_path='../data_code/masterdata.cs
         try:
             cat = df['item category'].loc[df.key == id].values[0].lower()
             metal = df['metal'].loc[df.key == id].values[0].lower()
-            if 'and' in metal:
+            if 'and' in metal.split(' '):
                 metal = 'twotone'
-            if 'Pandora Shine' in metal:
-                metal = 'Pandora Shine'
-            if 'Gold' in metal:
+
+            if 'shine' in metal.split(' '):
+                metal = 'pandora shine'
+
+            if 'white' in metal.split(' '):
+                metal = 'white gold'
+
+            if 'oxidised' in metal.split(' '):
+                metal = 'silver oxidised'
+
+            if 'rose' in metal.split(' '):
+                metal = 'rose'
+
+            if 'steel' in metal.split(' '):
+                metal = 'steel'
+
+            if 'gold' in metal.split(' '):
+                metal = 'gold'
+
+            if 'silver' in metal.split(' '):
+                metal = 'silver'
                 
-            label = cat + metal
+            label = cat + ' ' + metal
 
         except:
             print("Can't find info on product: {}".format(id))
@@ -220,5 +238,5 @@ if __name__ == "__main__":
    # sorted, not_found = sort_by_category(catalog)
     #occurrence_plot(catalog)
     #number_per_category_plot(catalog)
-    sublabels_from_ids(['590702HV-19'], 'data_code/masterdata.csv')
+    labels_and_metals_from_ids(list(catalog.keys()), 'data_code/masterdata.csv')
     pass
