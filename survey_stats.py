@@ -33,7 +33,7 @@ def bootstrap_mean_rank_plot(p, N, title):
     plt.show()
 
 
-r = requests.get("https://docs.google.com/spreadsheets/d/1Ywph9EmoDuVRL433TMxsoXtsVFS6Pox_VSNoZ68Az38/gviz/tq?tqx=out:csv")
+r = requests.get("https://docs.google.com/spreadsheets/d/1akG6y1lX4pi7EigF2Y8LNDxW-nR3Rxdfs9MxW_y4pYM/gviz/tq?tqx=out:csv")
 
 
 
@@ -43,7 +43,7 @@ data = pd.read_csv(BytesIO(data), index_col=0)
 
 new_names = []
 
-model_sequence = "daradrdarrdaradradardadrradadrrdaardrdaradradadrdraarddradraardradardrdaardraddradrardarad"
+model_sequence = "dradraradrdaradarddraardadrdardradraadrdradarrdadardardraadrrdadarrdaraddardardarrdardaadr"
 i = 0
 
 for col in data.columns:
@@ -103,13 +103,3 @@ bootstrap_mean_rank_plot(p, N, "Mean Ranks on wild images")
 p = new_data[["model", "score"]][np.logical_not(new_data["wild"])]
 
 bootstrap_mean_rank_plot(p, N, "Mean Ranks on catalog images")
-
-# color preference (not used in report)
-p = new_data[["model", "score"]][new_data["pref"] == "col"]
-
-bootstrap_mean_rank_plot(p, N, "Mean Ranks for people who prefer color")
-
-# shape preference (not used in report)
-p = new_data[["model", "score"]][new_data["pref"] == "shape"]
-
-bootstrap_mean_rank_plot(p, N, "Mean Ranks for people who prefer shape")

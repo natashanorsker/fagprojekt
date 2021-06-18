@@ -27,10 +27,10 @@ for d in os.listdir("Questionnaire_imgs"):
         os.mkdir(os.path.join(dd, "deepranking"))
         os.mkdir(os.path.join(dd, "random"))
         im = cv2.imread(os.path.join("Questionnaire_imgs", d))
-        cv2.imwrite(os.path.join(dd, "query.jpg"), im)
+        cv2.imwrite(os.path.join(dd, f"{d[:-4]}_query.jpg"), im)
 
 
-#ugly hack
+# ugly hack
 def extract_embeddings(dataloader, model, force_no_cuda=False):
     with torch.no_grad():
         model.eval()
@@ -88,12 +88,12 @@ np.save("labels.npy", labelsP)
 for d in os.listdir("survey_images"):
     print(d)
 
-    query_img = cv2.imread(os.path.join("survey_images", d, "query.jpg"))
+    query_img = cv2.imread(os.path.join("survey_images", d, f"{d}_query.jpg"))
 
     if "wild" in d:
         try:
             query_img = detectron2segment.inference.extractjewel(query_img)
-            cv2.imwrite(os.path.join("survey_images", d, "cropped.jpg"), query_img)
+            cv2.imwrite(os.path.join("survey_images", d, f"{d}_cropped.jpg"), query_img)
         except Exception as e:
             print(e)
             query_img = query_img

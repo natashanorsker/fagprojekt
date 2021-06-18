@@ -13,7 +13,7 @@ for d in tqdm(os.listdir("survey_images")):
 
     recs = []
 
-    query = cv2.imread(os.path.join("survey_images", d, "query.jpg"))
+    query = cv2.imread(os.path.join("survey_images", d, f"{d}_query.jpg"))
     query = cv2.cvtColor(query, cv2.COLOR_BGR2RGB)
 
     for root, subfolders, files in os.walk(os.path.join("survey_images", d)):
