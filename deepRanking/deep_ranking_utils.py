@@ -63,12 +63,15 @@ class Experiment:
 
         for epoch in range(0, self.start_epoch):
             self.scheduler.step()
+            self.current_epoch += 1
 
         for epoch in range(self.start_epoch, self.n_epochs):
             self.scheduler.step()
 
             train_loss, metrics = self.train_epoch()
             training_losses += [train_loss]
+            
+            self.current_epoch += 1
 
             message = 'Epoch: {}/{}. Train set: Average loss: {:.4f}'.format(epoch + 1, self.n_epochs, train_loss)
             for metric in metrics:
@@ -391,10 +394,3 @@ def SemihardNegativeQuadletSelector(margin, label_encoder, cpu=False): return Fu
                                                                                                    x: semihard_negative(
                                                                                                    x, margin),
                                                                                                cpu=cpu, label_encoder=label_encoder)
-
-
-
-
-
-
-
