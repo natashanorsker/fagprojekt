@@ -10,6 +10,6 @@ __pycache__/
 *.ipynb_checkpoints
 test-env/
 deepRanking/runs/
-survey_images_backup/
+survey/survey_images_backup/
 *.pyc
 detectron2segment/model_final.pth
