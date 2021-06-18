@@ -90,11 +90,13 @@ for d in os.listdir("survey_images"):
 
     query_img = cv2.imread(os.path.join("survey_images", d, "query.jpg"))
 
-    try:
-        query_img = detectron2segment.inference.extractjewel(query_img)
-        cv2.imwrite(os.path.join("survey_images", d, "cropped.jpg"), query_img)
-    except Exception:
-        query_img = query_img
+    if "wild" in d:
+        try:
+            query_img = detectron2segment.inference.extractjewel(query_img)
+            cv2.imwrite(os.path.join("survey_images", d, "cropped.jpg"), query_img)
+        except Exception as e:
+            print(e)
+            query_img = query_img
 
     query_img = cv2.resize(query_img, (96, 96)) / 256
 
@@ -158,12 +160,6 @@ for d in os.listdir("survey_images"):
         p = "/".join(rec.split(os.sep))
         p = p[:-10] + f"_00_OG.jpg"
         im = cv2.imread(p)
-        #if im is None:
-        #    print("Image failed to load, trying again")
-        #    cur_dir = os.path.dirname(os.path.abspath(__file__))
-        #    os.chdir(os.path.split(p)[0])
-        #    im = cv2.imread(os.path.split(p)[1])
-        #    os.chdir(cur_dir)
 
         p = os.path.join("survey_images", d, "deepranking", f"{i}_" + p.split(os.sep)[-1])
 
