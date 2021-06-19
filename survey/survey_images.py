@@ -18,14 +18,16 @@ from PIL import Image
 
 cuda = torch.cuda.is_available()
 
-print(os.listdir())
+# create folder if non-existent
+if not os.path.isdir("survey_images"):
+    os.mkdir("survey_images")
 
 # fill folder if empty
 for d in os.listdir("Questionnaire_imgs"):
     dd = os.path.join("survey_images", d[:-4])
     if not os.path.isdir(dd):
         os.mkdir(dd)
-        os.mkdir(os.path.join(dd, "../autoencoder"))
+        os.mkdir(os.path.join(dd, "autoencoder"))
         os.mkdir(os.path.join(dd, "deepranking"))
         os.mkdir(os.path.join(dd, "random"))
         im = cv2.imread(os.path.join("Questionnaire_imgs", d))
