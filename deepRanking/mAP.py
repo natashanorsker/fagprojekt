@@ -28,10 +28,10 @@ label_encoder2 = preprocessing.LabelEncoder()
 #what to match against
 subcategories = list(set(sublabels_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
 categories = list(set(labels_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
-categories_and_metals = list(set(labels_and_metals_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
+labels_and_metals = list(set(labels_and_metals_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
 ids = ids_from_ids(list(catalog.keys()))
 
-label_encoder2.fit(categories_and_metals) # change categories here
+label_encoder2.fit(ids) # change categories here
 
 K = 20
 
@@ -54,7 +54,7 @@ models.append('random')
 #%%
 def main(mod):
     # print('Getting embeddings')
-    if mod == 'vae' or 'random':
+    if mod == 'vae' or mod == 'random':
         train_embeddings = np.load(os.path.join('../','autoencoder', "models", 'final_model', "train_embeddings.npy"))
         train_labels = np.load(os.path.join('../','autoencoder', "models", 'final_model', "train_labels.npy"), allow_pickle=True)
         test_embeddings = np.load(os.path.join('../','autoencoder', "models", 'final_model', "test_embeddings.npy"))
@@ -81,29 +81,32 @@ def main(mod):
     rs = np.zeros((len(test_embeddings), K))
     for i, embedding in enumerate(test_embeddings):
         # query
-        if not mod == 'vae':
-            emb_label = label_encoder.inverse_transform([test_labels[i]])[0]
-        else:
+        if mod == 'vae' or mod == 'random':
             emb_label = test_labels[i]
-        labelq = labels_and_metals_from_ids([emb_label]) # change labels here
+        else:
+            emb_label = label_encoder.inverse_transform([test_labels[i]])[0]
+
+        labelq = ids_from_ids([emb_label]) # change labels here
         dists = np.sum((all_embeddings - embedding) ** 2, axis=1)
         closest_ids = np.argsort(dists)[:K*40]
-        if not mod == 'vae': # @k
-            idx = list(set([dataset[k][1] for k in closest_ids]))
-            idx = idx[:K]
-            transform = label_encoder.inverse_transform(idx)
-        elif mod == 'random':
-            closest_ids = np.random.choice(dists, 20)
-        else:
+        if mod == 'vae': # @k
             idx = all_labels[closest_ids]
             idx = idx[:K]
             transform = idx
+            
+        elif mod == 'random':
+            closest_ids = np.random.choice(all_labels, 20)
+            transform = closest_ids
+        else:
+            idx = list(set([dataset[k][1] for k in closest_ids]))
+            idx = idx[:K]
+            transform = label_encoder.inverse_transform(idx)
 
         p = np.zeros(K)
         r = np.zeros(K)
 
         y_true = label_encoder2.transform(labelq)
-        y_pred = labels_and_metals_from_ids(transform) # change to sublabels here
+        y_pred = ids_from_ids(transform) # change to sublabels here
         y_pred = label_encoder2.transform(np.array(y_pred).ravel())
 
         # k ranking
@@ -139,10 +142,10 @@ def main(mod):
 
     # log
     try:
-        np.savez('map_npz/labels_and_metals/' + mod, rss=rss, cmcs=cmcs)
+        np.savez('map_npz/ids/' + mod, rss=rss, cmcs=cmcs)
     except FileNotFoundError:
-        os.mkdir('map_npz/labels_and_metals')
-        np.savez('map_npz/labels_and_metals/' + mod, rss=rss, cmcs=cmcs)
+        os.mkdir('map_npz/ids')
+        np.savez('map_npz/ids/' + mod, rss=rss, cmcs=cmcs)
 
 # %%
 with concurrent.futures.ProcessPoolExecutor() as executor:
