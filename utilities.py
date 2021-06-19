@@ -98,7 +98,7 @@ def labels_and_metals_from_ids(ids, master_file_path='../data_code/masterdata.cs
                 metal = 'twotone'
 
             if 'shine' in metal.split(' '):
-                metal = 'pandora shine'
+                metal = 'gold'
 
             if 'white' in metal.split(' '):
                 metal = 'white gold'
