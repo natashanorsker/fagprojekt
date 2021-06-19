@@ -6,24 +6,32 @@ import os
 import numpy as np
 import torch
 import concurrent.futures
-from matplotlib import pyplot as plt
 from sklearn import preprocessing
-import pandas as pd
 
-from utilities import dict_from_json, labels_from_ids, sublabels_from_ids
-from autoencoder.train_test import get_train_test_split_paths
-from dataset import make_dataset, list_paths_labels
+from utilities import dict_from_json, labels_from_ids, sublabels_from_ids, labels_and_metals_from_ids
+from dataset import make_dataset
 from nets import EmbeddingNet
 from plots import extract_embeddings
 
 np.random.seed(42069)
 #%%
+# labels of ids
 catalog = dict_from_json('../catalog.json')
 label_encoder = preprocessing.LabelEncoder()
 label_encoder.fit(list(catalog.keys()))
 
+label_encoder2 = preprocessing.LabelEncoder()
+subcategories = list(set(sublabels_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
+categories = list(set(labels_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
+categories_and_metals = list(set(labels_and_metals_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
+
+label_encoder2.fit(categories_and_metals) # change to categories here
+
+K = 20
+
+#select dataset
 #make the 'normal' datasets:
-train_set, test_set = make_dataset(label_encoder, n_val_products=30, NoDuplicates=False)
+train_set, test_set = make_dataset(label_encoder, n_val_products=170, NoDuplicates=False)
 
 # where do we want to search?
 # dataset = torch.utils.data.ConcatDataset([test_set])
@@ -33,25 +41,31 @@ dataset = torch.utils.data.ConcatDataset([train_set, test_set])
 data_loader = torch.utils.data.DataLoader(dataset, batch_size=500, shuffle=False)
 data_loader_test = torch.utils.data.DataLoader(test_set, batch_size=500, shuffle=False)
 
-label_encoder2 = preprocessing.LabelEncoder()
-df = pd.read_csv('../data_code/masterdata.csv', sep=';') 
-df.columns = df.columns.str.lower()
-subcategories = list(set(df['item sub-category']))
-subcategories = [i.lower() for i in subcategories]
-categories = ['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings', 'Misc']
-label_encoder2.fit(categories) # change to subcategories here
-
 models = os.listdir('models')
-K = 20
+models.append('vae')
 #%%
 def main(mod):
     # print('Getting embeddings')
-    model = EmbeddingNet()
-    mpath = 'models/' + mod
-    model.load_state_dict(torch.load(mpath, map_location=torch.device('cpu')))
+    if mod == 'vae':
+        train_embeddings = np.load(os.path.join('../','autoencoder', "models", 'final_model', "train_embeddings.npy"))
+        train_labels = np.load(os.path.join('../','autoencoder', "models", 'final_model', "train_labels.npy"), allow_pickle=True)
+        test_embeddings = np.load(os.path.join('../','autoencoder', "models", 'final_model', "test_embeddings.npy"))
+        test_labels = np.load(os.path.join('../','autoencoder', "models", 'final_model', "test_labels.npy"), allow_pickle=True)
+        
+        # the loading just gives paths, instead get actual labels
+        root_folder = os.path.abspath('..')
+        test_labels = [i[len(root_folder):][6:][:i[len(root_folder):][6:].find('/')] for i in test_labels]
+        train_labels = [i[len(root_folder):][6:][:i[len(root_folder):][6:].find('/')] for i in train_labels] 
 
-    all_embeddings, all_labels = extract_embeddings(data_loader, model)
-    test_embeddings, test_labels = extract_embeddings(data_loader_test, model)
+        all_embeddings = np.concatenate((train_embeddings, test_embeddings),axis=0)
+        all_labels = np.concatenate((train_labels, test_labels),axis=0)
+    else:
+        model = EmbeddingNet()
+        mpath = 'models/' + mod
+        model.load_state_dict(torch.load(mpath, map_location=torch.device('cpu')))
+
+        all_embeddings, all_labels = extract_embeddings(data_loader, model)
+        test_embeddings, test_labels = extract_embeddings(data_loader_test, model)
 
     #%%
     # K = 20 # number of retrieved items to query image
@@ -60,29 +74,36 @@ def main(mod):
     rs = np.zeros((len(test_embeddings), K))
     for i, embedding in enumerate(test_embeddings):
         # query
-        emb_label = label_encoder.inverse_transform([test_labels[i]])[0]
-        labelq = labels_from_ids([emb_label]) # change to sublabels here
+        if not mod == 'vae':
+            emb_label = label_encoder.inverse_transform([test_labels[i]])[0]
+        else:
+            emb_label = test_labels[i]
+        labelq = labels_and_metals_from_ids([emb_label]) # change labels here
         dists = np.sum((all_embeddings - embedding) ** 2, axis=1)
-        closest_ids = np.argsort(dists)[:K*40] # @k
-        idx = list(set([dataset[k][1] for k in closest_ids]))
-        idx = idx[:K]
-        transform = label_encoder.inverse_transform(idx)
+        closest_ids = np.argsort(dists)[:K*40]
+        if not mod == 'vae': # @k
+            idx = list(set([dataset[k][1] for k in closest_ids]))
+            idx = idx[:K]
+            transform = label_encoder.inverse_transform(idx)
+        else:
+            idx = all_labels[closest_ids]
+            idx = idx[:K]
+            transform = idx
 
         p = np.zeros(K)
         r = np.zeros(K)
 
         y_true = label_encoder2.transform(labelq)
-        y_pred = labels_from_ids(transform) # change to sublabels here
+        y_pred = labels_and_metals_from_ids(transform) # change to sublabels here
         y_pred = label_encoder2.transform(np.array(y_pred).ravel())
 
         # k ranking
         for k in range(1, K+1):
             tp = np.sum((y_true == y_pred[:k]))
-            fn = np.sum((y_true == y_pred))
 
             p[k-1] = tp/len(y_pred[:k])
             # fraction of objects predicted to be positive among all positive objects
-            r[k-1] = tp/(tp + fn + 1e-6)
+            r[k-1] = tp/K
             # True Positive Identification Rate (TPIR): 
             # Probability of observing the correct identity within the top K ranks
             if y_true in y_pred[:k]:
@@ -109,11 +130,14 @@ def main(mod):
 
     # log
     try:
-        np.savez('map_npz/categories/' + mod, rss=rss, cmcs=cmcs)
+        np.savez('map_npz/labels_and_metals/' + mod, rss=rss, cmcs=cmcs)
     except FileNotFoundError:
-        os.mkdir('map_npz/categories/')
-        np.savez('map_npz/categories/' + mod, rss=rss, cmcs=cmcs)
+        os.mkdir('map_npz/labels_and_metals/')
+        np.savez('map_npz/labels_and_metals/' + mod, rss=rss, cmcs=cmcs)
 
 # %%
-with concurrent.futures.ProcessPoolExecutor() as executor:
-    executor.map(main, models)
+# with concurrent.futures.ProcessPoolExecutor() as executor:
+#     executor.map(main, models)
+
+# vae
+main(models[0])
