@@ -90,12 +90,11 @@ def main(mod):
         dists = np.sum((all_embeddings - embedding) ** 2, axis=1)
         closest_ids = np.argsort(dists)[:K*40]
         if mod == 'vae': # @k
-            idx = all_labels[closest_ids]
+            idx = set(all_labels[closest_ids])
             idx = idx[:K]
             transform = idx
-            
         elif mod == 'random':
-            closest_ids = np.random.choice(all_labels, 20)
+            closest_ids = np.random.choice(set(all_labels), K)
             transform = closest_ids
         else:
             idx = list(set([dataset[k][1] for k in closest_ids]))
@@ -152,4 +151,4 @@ with concurrent.futures.ProcessPoolExecutor() as executor:
     executor.map(main, models)
 
 # single
-# main(models[-1])
+# main(models[-2])
