@@ -1,8 +1,7 @@
-
-
 from PIL import Image, ImageChops
 import matplotlib.pyplot as plt
 import os
+import math
 import pandas as pd
 import json
 import re
@@ -51,7 +50,8 @@ def labels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_e
         try:
             label = df['item category'].loc[df.key == id].values[0]
 
-            if label not in ['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings']:
+            if label not in ['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings',
+                             'Earrings']:
                 label = 'Misc'
 
         except:
@@ -61,6 +61,7 @@ def labels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_e
 
     return labels
 
+
 def sublabels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_encoder=None):
     # should return the category in a string
     df = pd.read_csv(master_file_path, sep=';')
@@ -81,8 +82,7 @@ def sublabels_from_ids(ids, master_file_path='../data_code/masterdata.csv', labe
     return labels
 
 
-
-def sublabels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_encoder=None):
+def labels_and_metals_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_encoder=None):
     # should return the category in a string
     df = pd.read_csv(master_file_path, sep=';')
     df.columns = df.columns.str.lower()
@@ -93,18 +93,44 @@ def sublabels_from_ids(ids, master_file_path='../data_code/masterdata.csv', labe
     labels = []
     for id in ids:
         try:
-            label = df['item sub-category'].loc[df.key == id].values[0].lower()
+            cat = df['item category'].loc[df.key == id].values[0].lower()
+            metal = df['metal'].loc[df.key == id].values[0].lower()
+            if 'and' in metal.split(' '):
+                metal = 'twotone'
+
+            if 'shine' in metal.split(' '):
+                metal = 'gold'
+
+            if 'white' in metal.split(' '):
+                metal = 'white gold'
+
+            if 'oxidised' in metal.split(' '):
+                metal = 'silver oxidised'
+
+            if 'rose' in metal.split(' '):
+                metal = 'rose'
+
+            if 'steel' in metal.split(' '):
+                metal = 'steel'
+
+            if 'gold' in metal.split(' '):
+                metal = 'gold'
+
+            if 'silver' in metal.split(' '):
+                metal = 'silver'
+
+            label = cat + ' ' + metal
 
         except:
             print("Can't find info on product: {}".format(id))
             label = 'Set'
+
         labels.append(label)
     return labels
 
 
 def sort_by_category(catalog, category='item category', master_file_path='data_code/masterdata.csv', save=True):
     # read the master file:
-
 
     df = pd.read_csv(master_file_path, sep=';')
     df.columns = df.columns.str.lower()
@@ -136,3 +162,11 @@ def sort_by_category(catalog, category='item category', master_file_path='data_c
         another_file.close()
 
     return sorted, not_found_products
+
+
+if __name__ == "__main__":
+    import seaborn as sns
+
+    catalog = dict_from_json()
+    labels_and_metals_from_ids(list(catalog.keys()), 'data_code/masterdata.csv')
+    pass
