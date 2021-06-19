@@ -3,7 +3,6 @@
 from PIL import Image, ImageChops
 import matplotlib.pyplot as plt
 import os
-import math
 import pandas as pd
 import json
 import re
@@ -103,9 +102,6 @@ def sublabels_from_ids(ids, master_file_path='../data_code/masterdata.csv', labe
     return labels
 
 
-
-
-
 def sort_by_category(catalog, category='item category', master_file_path='data_code/masterdata.csv', save=True):
     # read the master file:
 
@@ -140,93 +136,3 @@ def sort_by_category(catalog, category='item category', master_file_path='data_c
         another_file.close()
 
     return sorted, not_found_products
-
-
-def show_images(list_of_image_paths, ncols, plot_title=True, save=False):
-    plt.box(False)
-    n_imgs = len(list_of_image_paths)
-    nrows = math.ceil(n_imgs / ncols)
-
-    try:
-        list_of_image_paths[ncols - 1]
-    except IndexError:
-        print('Error: ncols > len(images). There should be less columns than the amount of total images.')
-        return
-
-    if n_imgs == 1:
-        img = Image.open(list_of_image_paths[0])
-        plt.imshow(img)
-        plt.axis('off')
-        plt.title(list_of_image_paths[0].split('\\')[-1][:-4])
-
-    else:
-
-        # create figure (fig), and array of axes (ax)
-        fig, ax = plt.subplots(nrows=nrows, ncols=ncols)
-
-        for i, axi in enumerate(ax.flat):
-            if i <= n_imgs - 1:
-                img = Image.open(list_of_image_paths[i])
-                title = list_of_image_paths[i].split('\\')[-1][:-4]
-                axi.imshow(img, alpha=1)
-                axi.axis('off')
-                axi.set_title(title)
-
-    if save:
-        plt.save('plotted_imgs.png')
-
-    plt.show()
-
-
-def occurrence_plot(catalog):
-    occurrences = np.zeros(42)
-
-    for id in catalog.keys():
-        images = list_pictures(os.path.join("data", id))
-        images_no_au = [img for img in images if 'AU' not in img[-7:]]
-        occurrences[len(images_no_au)] += 1
-
-    sns.set_style('whitegrid')
-    sns.barplot(x=list(range(42)), y=occurrences)
-    plt.xlabel('Number of images')
-    plt.ylabel('Number of products')
-    plt.xticks(list(range(42))[::2])
-    plt.show()
-
-def number_per_category_plot(catalog):
-    all_products = list(catalog.keys())
-    all_cats = labels_from_ids(all_products, 'data_code/masterdata.csv')
-
-    cats, counts = np.unique(all_cats, return_counts=True)
-
-    fig = plt.figure(figsize=(10, 5))
-
-    # creating the bar plot
-    plt.bar(cats, counts, alpha=0.6,
-            width=0.5, color=['mediumseagreen', 'green', 'lightseagreen', 'darkcyan', 'blue', 'navy'])
-    plt.xlabel('Categories')
-    plt.ylabel('Number of products')
-    plt.xticks(list(range(len(cats))), list(cats))
-    plt.show()
-
-    '''
-    #plt.style.use('seaborn')
-    #sns.set_style('dark')
-    sns.barplot(x=list(range(len(cats))), y=counts,saturation=.5)
-    plt.xlabel('Categories')
-    plt.ylabel('Number of products')
-    plt.xticks(list(range(len(cats))), list(cats))
-    plt.show()
-    '''
-
-
-
-
-if __name__ == "__main__":
-    import seaborn as sns
-    catalog = dict_from_json()
-   # sorted, not_found = sort_by_category(catalog)
-    #occurrence_plot(catalog)
-    number_per_category_plot(catalog)
-    #sublabels_from_ids(['590702HV-19'], 'data_code/masterdata.csv')
-    pass

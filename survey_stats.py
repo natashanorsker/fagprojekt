@@ -34,7 +34,7 @@ def bootstrap_mean_rank_plot(p, N, title):
 
 
 r = requests.get("https://docs.google.com/spreadsheets/d/1Ywph9EmoDuVRL433TMxsoXtsVFS6Pox_VSNoZ68Az38/gviz/tq?tqx=out:csv")
-
+#r = requests.get("https://docs.google.com/spreadsheets/d/1akG6y1lX4pi7EigF2Y8LNDxW-nR3Rxdfs9MxW_y4pYM=out:csv")
 
 
 data = r.content

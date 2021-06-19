@@ -86,7 +86,7 @@ dists, idx = tree.query(embedding.numpy().ravel(), k=n_neighbor)
 
 #%% 5 show  nearest images
 fig, ax = plt.subplots(1, n_neighbor+2,figsize=((15, 4)))
-fig.suptitle(f'{n_neighbor} Most similar images to query image',size='xx-large')
+#fig.suptitle(f'{n_neighbor} Most similar images to query image',size='xx-large')
 
 ax[0].imshow(im.resize((96*3,96*3)))
 ax[0].axis('off')
