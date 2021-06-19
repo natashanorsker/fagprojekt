@@ -20,12 +20,18 @@ catalog = dict_from_json('../catalog.json')
 label_encoder = preprocessing.LabelEncoder()
 label_encoder.fit(list(catalog.keys()))
 
+def ids_from_ids(ids):
+    '''dummy function to make it similar to the other *_from_ids'''
+    return ids
+
 label_encoder2 = preprocessing.LabelEncoder()
+#what to match against
 subcategories = list(set(sublabels_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
 categories = list(set(labels_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
 categories_and_metals = list(set(labels_and_metals_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
+ids = ids_from_ids(list(catalog.keys()))
 
-label_encoder2.fit(categories_and_metals) # change to categories here
+label_encoder2.fit(ids) # change categories here
 
 K = 20
 
@@ -78,7 +84,7 @@ def main(mod):
             emb_label = label_encoder.inverse_transform([test_labels[i]])[0]
         else:
             emb_label = test_labels[i]
-        labelq = labels_and_metals_from_ids([emb_label]) # change labels here
+        labelq = ids_from_ids([emb_label]) # change labels here
         dists = np.sum((all_embeddings - embedding) ** 2, axis=1)
         closest_ids = np.argsort(dists)[:K*40]
         if not mod == 'vae': # @k
@@ -94,7 +100,7 @@ def main(mod):
         r = np.zeros(K)
 
         y_true = label_encoder2.transform(labelq)
-        y_pred = labels_and_metals_from_ids(transform) # change to sublabels here
+        y_pred = ids_from_ids(transform) # change to sublabels here
         y_pred = label_encoder2.transform(np.array(y_pred).ravel())
 
         # k ranking
@@ -130,14 +136,14 @@ def main(mod):
 
     # log
     try:
-        np.savez('map_npz/labels_and_metals/' + mod, rss=rss, cmcs=cmcs)
+        np.savez('map_npz/ids/' + mod, rss=rss, cmcs=cmcs)
     except FileNotFoundError:
-        os.mkdir('map_npz/labels_and_metals/')
-        np.savez('map_npz/labels_and_metals/' + mod, rss=rss, cmcs=cmcs)
+        os.mkdir('map_npz/ids')
+        np.savez('map_npz/ids/' + mod, rss=rss, cmcs=cmcs)
 
 # %%
-# with concurrent.futures.ProcessPoolExecutor() as executor:
-#     executor.map(main, models)
+with concurrent.futures.ProcessPoolExecutor() as executor:
+    executor.map(main, models)
 
-# vae
-main(models[0])
+# single
+# main(models[-1])

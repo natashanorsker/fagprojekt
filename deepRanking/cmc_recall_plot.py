@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-dir = 'map_npz/categories'
+dir = 'map_npz/labels_and_metals'
 models = os.listdir('models')
 npz_files = os.listdir(dir)
 
@@ -17,10 +17,11 @@ for i, file in enumerate(npz_files):
     rss[i, :] = f['rss']
 
 # CMC Curve: Plots TPIR against ranks
-models_crop = [mod[7:] for mod in models]
+models_crop = [mod[7:] for mod in models if 'vae' not in mod]
 models_crop2 = [mod[:mod.find('_')] for mod in models_crop]
 margins = [mod[mod.find('_',15)+1:][:mod[mod.find('_',15)+1:].find('_')] for mod in models_crop]
 leg = [models_crop2[i] + ' '+ margins[i] for i in range(len(margins))]
+leg.append('vae')
 plt.figure()
 plt.plot(np.tile(np.arange(1,K+1), (cmcs.shape[0],1)).T,cmcs.T)
 plt.xticks(range(1,K+1))
