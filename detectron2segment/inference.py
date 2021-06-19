@@ -37,8 +37,7 @@ from detectron2.utils.logger import setup_logger
 setup_logger()
 
 
-
-def extractjewel(im, threshold: float = 0.82, one_jewel: bool = True) -> np.ndarray:
+def extractjewel(im, threshold: float = 0.82, one_jewel: bool = True, path: str = None) -> np.ndarray:
     """
     n_jewel determines the number of jewels to be extracted one (default) or all 
     extracts 1 by default
@@ -57,9 +56,13 @@ def extractjewel(im, threshold: float = 0.82, one_jewel: bool = True) -> np.ndar
     ```
     """
     cfg = get_cfg()
-    cfg.merge_from_file(os.path.join('detectron2segment','config.yml'))
+    if path:
+        cfg.merge_from_file(os.path.join(path, 'config.yml'))
+        cfg.MODEL.WEIGHTS = os.path.join(path, 'model_final.pth')
+    else:
+        cfg.merge_from_file(os.path.join('detectron2segment','config.yml'))
+        cfg.MODEL.WEIGHTS = os.path.join('detectron2segment', 'model_final.pth')
     cfg.MODEL.DEVICE = 'cpu'
-    cfg.MODEL.WEIGHTS = os.path.join('detectron2segment', 'model_final.pth')
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = threshold   # set a custom testing threshold
 
     predictor = DefaultPredictor(cfg)
@@ -72,7 +75,7 @@ def extractjewel(im, threshold: float = 0.82, one_jewel: bool = True) -> np.ndar
         print('No jewellery found in image, attempting recovery')
         threshold = threshold-0.2
         print(f'threshold lowered to {threshold}')
-        crop_img = extractjewel(im, threshold=threshold)
+        crop_img = extractjewel(im, threshold=threshold, path=path)
         if crop_img is not None:
             return crop_img
         if threshold < 0.1:
