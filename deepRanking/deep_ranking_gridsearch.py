@@ -24,7 +24,7 @@ from datetime import date
 cuda = torch.cuda.is_available()
 #print('device:', str(torch.cuda.get_device_name()))
 # PARAMETERS TO SEARCH:
-param_grid = {'n_epochs': [1, 15, 25, 40], 'lr': [0.0001, 0.005, 0.1],'margin':[1]}
+param_grid = {'n_epochs': [1, 10, 15, 25], 'lr': [0.0001, 0.005, 0.1],'margin':[1]}
 
 # PARAMETERS THAT CAN BE MANUALLY ADJUSTED:
 # datasets:
@@ -89,4 +89,4 @@ for experiment in list(ParameterGrid(param_grid)):
                          n_epochs=experiment['n_epochs'])
 
         experiments.append(run)
-        torch.save(run.model.state_dict(), 'models/online_{}_model_margin_{}_{}_{}loss.pth'.format(sampling_method.name, experiment['margin'], date.today(),round(run.val_loss, 4)))
+        torch.save(run.model.state_dict(), 'models/online_{}_model_ep_{}_lr_{}_margin_{}_date_{}_loss_{}.pth'.format(sampling_method.name, experiment['n_epochs'], experiment['lr'], experiment['margin'], date.today(),round(run.val_loss, 4)))

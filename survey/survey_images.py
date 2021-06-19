@@ -18,14 +18,16 @@ from PIL import Image
 
 cuda = torch.cuda.is_available()
 
-print(os.listdir())
+# create folder if non-existent
+if not os.path.isdir("survey_images"):
+    os.mkdir("survey_images")
 
 # fill folder if empty
 for d in os.listdir("Questionnaire_imgs"):
     dd = os.path.join("survey_images", d[:-4])
     if not os.path.isdir(dd):
         os.mkdir(dd)
-        os.mkdir(os.path.join(dd, "../autoencoder"))
+        os.mkdir(os.path.join(dd, "autoencoder"))
         os.mkdir(os.path.join(dd, "deepranking"))
         os.mkdir(os.path.join(dd, "random"))
         im = cv2.imread(os.path.join("Questionnaire_imgs", d))
@@ -83,9 +85,6 @@ data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=500, shuffle
 
 embeddingsP, labelsP = extract_embeddings(data_loader, model, force_no_cuda=True)
 
-np.save("embeddings.npy", embeddingsP)
-np.save("labels.npy", labelsP)
-
 for d in os.listdir("survey_images"):
     print(d)
 
@@ -93,7 +92,8 @@ for d in os.listdir("survey_images"):
 
     if "wild" in d:
         try:
-            query_img = detectron2segment.inference.extractjewel(query_img)
+            p = os.path.join("..", "detectron2segment")
+            query_img = detectron2segment.inference.extractjewel(query_img, path=p)
             cv2.imwrite(os.path.join("survey_images", d, f"{d}_cropped.jpg"), query_img)
         except Exception as e:
             print(e)
@@ -125,7 +125,8 @@ for d in os.listdir("survey_images"):
     recs = sorted_labels[np.sort(unique)][:5]
 
     for i, rec in enumerate(recs):
-        p = "/".join(rec.split(os.sep)[1:])
+        #p = "/".join(rec.split(os.sep)[1:])
+        p = rec
         p = p[:-10] + f"_00_OG.jpg"
         im = cv2.imread(p)
         p = os.path.join("survey_images", d, "autoencoder", f"{i}_" + p.split(os.sep)[-1])
