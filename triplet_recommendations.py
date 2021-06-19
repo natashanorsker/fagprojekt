@@ -18,7 +18,7 @@ from utilities import dict_from_json
 #%% Step 1 get embeddings for corpus
 print('Getting embeddings')
 model = EmbeddingNet()
-model.load_state_dict(torch.load('deepRanking/models/online_model7-6_0.3979loss.pth', map_location=torch.device('cpu')))
+model.load_state_dict(torch.load('/Users/almafazlagic/fagprojekt/deepRanking/models/online_semi_model_margin_0.1_2021-06-13_0.0487loss.pth', map_location=torch.device('cpu')))
 
 catalog = dict_from_json('catalog.json')
 label_encoder = preprocessing.LabelEncoder()
@@ -53,12 +53,14 @@ crop_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB)
 query_img = Image.fromarray(crop_img)
 im = Image.open(impath)
 #%% Step 2 testing. this is for proving that the same image is found
+'''
 testim = dataset[70][0].numpy()    
 testim = np.asarray(np.interp(testim, (0, 1), (0,255)),dtype=np.uint8)
 testim = np.swapaxes(testim,0,1)
 testim = np.swapaxes(testim,1,2)
 im = Image.fromarray(testim)
 query_img = Image.fromarray(testim)
+'''
 #%% Step 3 get embeddings for new image
 print('Searching for similar images')
 model.eval()   # apparently does more than to print out the model. I think it freezes som weights or something
@@ -84,7 +86,7 @@ dists, idx = tree.query(embedding.numpy().ravel(), k=n_neighbor)
 
 #%% 5 show  nearest images
 fig, ax = plt.subplots(1, n_neighbor+2,figsize=((15, 4)))
-fig.suptitle(f'{n_neighbor} Most similar images to query image',size='xx-large')
+#fig.suptitle(f'{n_neighbor} Most similar images to query image',size='xx-large')
 
 ax[0].imshow(im.resize((96*3,96*3)))
 ax[0].axis('off')

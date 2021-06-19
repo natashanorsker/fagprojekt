@@ -1,5 +1,3 @@
-
-
 from PIL import Image, ImageChops
 import matplotlib.pyplot as plt
 import os
@@ -52,7 +50,8 @@ def labels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_e
         try:
             label = df['item category'].loc[df.key == id].values[0]
 
-            if label not in ['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings', 'Earrings']:
+            if label not in ['Bracelets', 'Charms', 'Jewellery spare parts', 'Necklaces & Pendants', 'Rings',
+                             'Earrings']:
                 label = 'Misc'
 
         except:
@@ -61,6 +60,7 @@ def labels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_e
         labels.append(label)
 
     return labels
+
 
 def sublabels_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_encoder=None):
     # should return the category in a string
@@ -80,6 +80,7 @@ def sublabels_from_ids(ids, master_file_path='../data_code/masterdata.csv', labe
             label = 'Set'
         labels.append(label)
     return labels
+
 
 def labels_and_metals_from_ids(ids, master_file_path='../data_code/masterdata.csv', label_encoder=None):
     # should return the category in a string
@@ -117,7 +118,7 @@ def labels_and_metals_from_ids(ids, master_file_path='../data_code/masterdata.cs
 
             if 'silver' in metal.split(' '):
                 metal = 'silver'
-                
+
             label = cat + ' ' + metal
 
         except:
@@ -130,7 +131,6 @@ def labels_and_metals_from_ids(ids, master_file_path='../data_code/masterdata.cs
 
 def sort_by_category(catalog, category='item category', master_file_path='data_code/masterdata.csv', save=True):
     # read the master file:
-
 
     df = pd.read_csv(master_file_path, sep=';')
     df.columns = df.columns.str.lower()
@@ -164,79 +164,9 @@ def sort_by_category(catalog, category='item category', master_file_path='data_c
     return sorted, not_found_products
 
 
-def show_images(list_of_image_paths, ncols, plot_title=True, save=False):
-    plt.box(False)
-    n_imgs = len(list_of_image_paths)
-    nrows = math.ceil(n_imgs / ncols)
-
-    try:
-        list_of_image_paths[ncols - 1]
-    except IndexError:
-        print('Error: ncols > len(images). There should be less columns than the amount of total images.')
-        return
-
-    if n_imgs == 1:
-        img = Image.open(list_of_image_paths[0])
-        plt.imshow(img)
-        plt.axis('off')
-        plt.title(list_of_image_paths[0].split('\\')[-1][:-4])
-
-    else:
-
-        # create figure (fig), and array of axes (ax)
-        fig, ax = plt.subplots(nrows=nrows, ncols=ncols)
-
-        for i, axi in enumerate(ax.flat):
-            if i <= n_imgs - 1:
-                img = Image.open(list_of_image_paths[i])
-                title = list_of_image_paths[i].split('\\')[-1][:-4]
-                axi.imshow(img, alpha=1)
-                axi.axis('off')
-                axi.set_title(title)
-
-    if save:
-        plt.save('plotted_imgs.png')
-
-    plt.show()
-
-
-def occurrence_plot(catalog):
-    occurrences = np.zeros(42)
-
-    for id in catalog.keys():
-        images = list_pictures(os.path.join("data", id))
-        images_no_au = [img for img in images if 'AU' not in img[-7:]]
-        occurrences[len(images_no_au)] += 1
-
-    sns.set_style('whitegrid')
-    sns.barplot(x=list(range(42)), y=occurrences)
-    plt.xlabel('Number of images')
-    plt.ylabel('Number of products')
-    plt.xticks(list(range(42))[::2])
-    plt.show()
-
-def number_per_category_plot(catalog):
-    all_products = list(catalog.keys())
-    all_cats = labels_from_ids(all_products, 'data_code/masterdata.csv')
-
-    cats, counts = np.unique(all_cats, return_counts=True)
-
-
-    sns.set_style('whitegrid')
-    sns.barplot(x=list(range(len(cats))), y=counts)
-    plt.xlabel('Categories')
-    plt.ylabel('Number of products')
-    plt.xticks(list(range(len(cats))), list(cats))
-    plt.show()
-
-
-
-
 if __name__ == "__main__":
     import seaborn as sns
+
     catalog = dict_from_json()
-   # sorted, not_found = sort_by_category(catalog)
-    #occurrence_plot(catalog)
-    #number_per_category_plot(catalog)
     labels_and_metals_from_ids(list(catalog.keys()), 'data_code/masterdata.csv')
     pass

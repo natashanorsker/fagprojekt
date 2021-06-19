@@ -10,6 +10,7 @@ def dict_from_json(path):
     with open(path, "r") as a_file:
         catalog = json.loads(a_file.read())
     return catalog
+
 categories = dict_from_json('../catalog.json')
 
 include = set(['bracelets', 'charms', 'necklaces', 'rings', 'earrings'])
@@ -49,7 +50,8 @@ i = 0
 j = 1
 
 # Plot PCA of the data
-f = plt.figure(figsize=(8,8))
+plt.style.use('seaborn')
+f = plt.figure(figsize=(6,6))
 plt.title('PCA on dataset')
 #Z = array(Z)
 for c in classNames:
@@ -59,6 +61,7 @@ for c in classNames:
 plt.legend(classNames)
 plt.xlabel('PC{0}'.format(i+1))
 plt.ylabel('PC{0}'.format(j+1));
-plt.savefig('PCA.pdf');
+#plt.savefig('PCA.pdf');
+plt.show()
 
 

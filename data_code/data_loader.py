@@ -186,6 +186,7 @@ if __name__ == "__main__":
     catalog = dict_from_json("../catalog.json")
 
     #removing the products that are not in the masterfile from the catalog
+    #removing the products that are not in the masterfile from the catalog
     for product in has_no_class:
         if product in catalog.keys():
             catalog.pop(product)
