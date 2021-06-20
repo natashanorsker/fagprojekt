@@ -24,7 +24,7 @@ leg = [model.split('_')[1] + ' ' + model.split('_')[4] for model in models]
 leg.append('random')
 leg.append('vae')
 
-plt.figure()
+plt.figure(figsize=(6,4))
 plt.plot(np.tile(np.arange(1,K+1), (cmcs.shape[0],1)).T,cmcs.T)
 plt.xticks(range(1,K+1))
 plt.xlabel('Rank')
@@ -35,7 +35,7 @@ plt.ylim(0,1.02)
 plt.savefig('../Figures/cmc_subcategories.pdf')
 plt.show()
 
-plt.figure()
+plt.figure(figsize=(6,4))
 plt.plot(np.tile(np.arange(1,K+1), (rss.shape[0],1)).T, rss.T)
 plt.xticks(range(1,K+1))
 plt.xlabel('Rank')
