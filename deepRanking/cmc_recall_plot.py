@@ -2,7 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-dir = 'map_npz/ids/'
+plt.style.use('seaborn')
+
+dir = 'map_npz/subcategories/'
 models = os.listdir('models')
 npz_files = os.listdir(dir)
 
@@ -27,10 +29,10 @@ plt.plot(np.tile(np.arange(1,K+1), (cmcs.shape[0],1)).T,cmcs.T)
 plt.xticks(range(1,K+1))
 plt.xlabel('Rank')
 plt.ylabel('Identification Accuracy')
-plt.title('CMC Curve')
+plt.title('CMC Curve for subcategories')
 plt.legend(leg)
 plt.ylim(0,1.02)
-plt.savefig('../Figures/cmc_ids.pdf')
+plt.savefig('../Figures/cmc_subcategories.pdf')
 plt.show()
 
 plt.figure()
@@ -38,8 +40,8 @@ plt.plot(np.tile(np.arange(1,K+1), (rss.shape[0],1)).T, rss.T)
 plt.xticks(range(1,K+1))
 plt.xlabel('Rank')
 plt.ylabel('Recall')
-plt.title('Recall at K')
+plt.title('Recall at K for subcategories')
 plt.legend(leg)
 plt.ylim(0,1.02)
-plt.savefig('../Figures/rekallatK_ids.pdf')
+plt.savefig('../Figures/rekallatK_subcategories.pdf')
 plt.show()

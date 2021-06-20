@@ -1,33 +1,33 @@
-model: random
-mAP @ k=20, cmc at rank-1, cmc at rank-5
-0.21 & 16.15 & 43.74
-model: online_hard_model_margin_0.1_2021-06-13_0.1loss.pth
-mAP @ k=20, cmc at rank-1, cmc at rank-5
-0.0 & nan & nan
 model: vae
 mAP @ k=20, cmc at rank-1, cmc at rank-5
-90.81 & 100.0 & 100.0
+0.81 & 11.69 & 49.14
+model: random
+mAP @ k=20, cmc at rank-1, cmc at rank-5
+0.16 & 0.0 & 48.23
+model: online_random_model_margin_0.1_2021-06-13_0.0891loss.pth
+mAP @ k=20, cmc at rank-1, cmc at rank-5
+3.68 & 7.59 & 45.02
+model: online_hard_model_margin_0.1_2021-06-13_0.1loss.pth
+mAP @ k=20, cmc at rank-1, cmc at rank-5
+0.0 & 0.0 & 0.0
+model: online_semi_model_margin_1_2021-06-13_0.5335loss.pth
+mAP @ k=20, cmc at rank-1, cmc at rank-5
+3.55 & 6.95 & 43.06
+model: online_random_model_margin_1_2021-06-13_0.9494loss.pth
+mAP @ k=20, cmc at rank-1, cmc at rank-5
+3.9 & 10.88 & 47.95
+model: online_semi_model_margin_0.5_2021-06-13_0.2601loss.pth
+mAP @ k=20, cmc at rank-1, cmc at rank-5
+3.47 & 6.18 & 45.39
 model: online_semi_model_margin_0.1_2021-06-13_0.0487loss.pth
 mAP @ k=20, cmc at rank-1, cmc at rank-5
 3.36 & 6.9 & 40.3
 model: online_hard_model_margin_0.5_2021-06-13_0.5loss.pth
 mAP @ k=20, cmc at rank-1, cmc at rank-5
 0.04 & 0.0 & 37.75
-model: online_semi_model_margin_1_2021-06-13_0.5335loss.pth
-mAP @ k=20, cmc at rank-1, cmc at rank-5
-3.55 & 6.95 & 43.06
-model: online_semi_model_margin_0.5_2021-06-13_0.2601loss.pth
-mAP @ k=20, cmc at rank-1, cmc at rank-5
-3.47 & 6.18 & 45.39
-model: online_random_model_margin_0.1_2021-06-13_0.0891loss.pth
-mAP @ k=20, cmc at rank-1, cmc at rank-5
-3.68 & 7.59 & 45.02
 model: online_hard_model_margin_1_2021-06-13_1.0loss.pth
 mAP @ k=20, cmc at rank-1, cmc at rank-5
 0.03 & 0.0 & 89.06
 model: online_random_model_margin_0.5_2021-06-13_0.4297loss.pth
 mAP @ k=20, cmc at rank-1, cmc at rank-5
 3.9 & 8.97 & 46.32
-model: online_random_model_margin_1_2021-06-13_0.9494loss.pth
-mAP @ k=20, cmc at rank-1, cmc at rank-5
-3.9 & 10.88 & 47.95
