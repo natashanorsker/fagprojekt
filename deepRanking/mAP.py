@@ -31,7 +31,7 @@ categories = list(set(labels_from_ids(list(catalog.keys()), '../data_code/master
 labels_and_metals = list(set(labels_and_metals_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
 ids = ids_from_ids(list(catalog.keys()))
 
-label_encoder2.fit(ids) # change categories here
+label_encoder2.fit(subcategories) # change categories here
 
 K = 20
 
@@ -86,15 +86,15 @@ def main(mod):
         else:
             emb_label = label_encoder.inverse_transform([test_labels[i]])[0]
 
-        labelq = ids_from_ids([emb_label]) # change labels here
+        labelq = sublabels_from_ids([emb_label]) # change labels here
         dists = np.sum((all_embeddings - embedding) ** 2, axis=1)
         closest_ids = np.argsort(dists)[:K*40]
         if mod == 'vae': # @k
-            idx = set(all_labels[closest_ids])
+            idx = list(set(all_labels[closest_ids]))
             idx = idx[:K]
             transform = idx
         elif mod == 'random':
-            closest_ids = np.random.choice(set(all_labels), K)
+            closest_ids = np.random.choice(list(set(all_labels)), K)
             transform = closest_ids
         else:
             idx = list(set([dataset[k][1] for k in closest_ids]))
@@ -105,7 +105,7 @@ def main(mod):
         r = np.zeros(K)
 
         y_true = label_encoder2.transform(labelq)
-        y_pred = ids_from_ids(transform) # change to sublabels here
+        y_pred = sublabels_from_ids(transform) # change to sublabels here
         y_pred = label_encoder2.transform(np.array(y_pred).ravel())
 
         # k ranking
@@ -132,7 +132,7 @@ def main(mod):
 
     rss = np.mean(rs, axis=0)
     maP = np.mean(aps)
-    cmc = cmc / np.max(cmc)
+    cmc = cmc / (np.max(cmc) + 1e-9)
     cmcs = cmc
 
     print(f'model: {mod}')
@@ -141,10 +141,10 @@ def main(mod):
 
     # log
     try:
-        np.savez('map_npz/ids/' + mod, rss=rss, cmcs=cmcs)
+        np.savez('map_npz/subcategories/' + mod, rss=rss, cmcs=cmcs)
     except FileNotFoundError:
-        os.mkdir('map_npz/ids')
-        np.savez('map_npz/ids/' + mod, rss=rss, cmcs=cmcs)
+        os.mkdir('map_npz/subcategories')
+        np.savez('map_npz/subcategories/' + mod, rss=rss, cmcs=cmcs)
 
 # %%
 with concurrent.futures.ProcessPoolExecutor() as executor:
