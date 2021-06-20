@@ -94,6 +94,9 @@ def main(mod):
             idx = idx[:K]
             transform = idx
         elif mod == 'random':
+            import time
+            t = 1000 * time.time() # current time in milliseconds
+            np.random.seed(int(t) % 2**32)
             closest_ids = np.random.choice(list(set(all_labels)), K)
             transform = closest_ids
         else:
@@ -141,10 +144,10 @@ def main(mod):
 
     # log
     try:
-        np.savez('map_npz/subcategories/' + mod, rss=rss, cmcs=cmcs)
+        np.savez('map_npz/subcategories2/' + mod, rss=rss, cmcs=cmcs)
     except FileNotFoundError:
-        os.mkdir('map_npz/subcategories')
-        np.savez('map_npz/subcategories/' + mod, rss=rss, cmcs=cmcs)
+        os.mkdir('map_npz/subcategories2')
+        np.savez('map_npz/subcategories2/' + mod, rss=rss, cmcs=cmcs)
 
 # %%
 with concurrent.futures.ProcessPoolExecutor() as executor:
