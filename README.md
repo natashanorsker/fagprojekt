@@ -7,7 +7,7 @@ The task was to create a jewellery recommendation engine that can recommend new 
 
 # Motivation
 
-Say for example that you want to buy a piece of jewellery similiar to the one below but you don't know how to describe it or what exactly to search for. Instead you can search by just taking an image of the necklace and use that image to seach with.
+Say for example that you want to buy a piece of jewellery similiar to the one below but you don't know how to describe it or what exactly to search for. Instead you can search by just taking an image of the necklace and use that image to search with.
 
 <p align="center">
 <img src=Figures/test2.jpeg width=200px alt=necklace>
