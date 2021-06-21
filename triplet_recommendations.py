@@ -18,7 +18,7 @@ from utilities import dict_from_json
 #%% Step 1 get embeddings for corpus
 print('Getting embeddings')
 model = EmbeddingNet()
-model.load_state_dict(torch.load('/Users/almafazlagic/fagprojekt/deepRanking/models/online_semi_model_margin_0.1_2021-06-13_0.0487loss.pth', map_location=torch.device('cpu')))
+model.load_state_dict(torch.load('fagprojekt/deepRanking/models/online_semi_model_margin_0.1_2021-06-13_0.0487loss.pth', map_location=torch.device('cpu')))
 
 catalog = dict_from_json('catalog.json')
 label_encoder = preprocessing.LabelEncoder()
