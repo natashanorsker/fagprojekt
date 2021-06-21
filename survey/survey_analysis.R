@@ -6,7 +6,7 @@ current_path = rstudioapi::getActiveDocumentContext()$path
 setwd(dirname(current_path ))
 print( getwd() )
 
-data <- read.csv("crop_survey_results.csv"", header = T)
+data <- read.csv("crop_survey_results.csv", header = T)
 
 
 # mean ranks and friedman test for all query images
