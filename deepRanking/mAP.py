@@ -3,7 +3,7 @@ import sys
 sys.path.append('..')
 import numpy as np
 import os
-import numpy as np
+import pandas as pd
 import torch
 import concurrent.futures
 from sklearn import preprocessing
@@ -24,14 +24,16 @@ def ids_from_ids(ids):
     '''dummy function to make it similar to the other *_from_ids'''
     return ids
 
-label_encoder2 = preprocessing.LabelEncoder()
 #what to match against
 subcategories = list(set(sublabels_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
 categories = list(set(labels_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
 labels_and_metals = list(set(labels_and_metals_from_ids(list(catalog.keys()), '../data_code/masterdata.csv')))
 ids = ids_from_ids(list(catalog.keys()))
 
+label_encoder2 = preprocessing.LabelEncoder()
 label_encoder2.fit(subcategories) # change categories here
+
+x_from_ids = sublabels_from_ids
 
 K = 20
 
@@ -61,8 +63,8 @@ def main(mod):
         test_labels = np.load(os.path.join('../','autoencoder', "models", 'final_model', "test_labels.npy"), allow_pickle=True)
         
         # the loading just gives paths, instead get actual labels
-        test_labels = [i.split(os.sep)[-2] for i in test_labels]
-        train_labels = [i.split(os.sep)[-2] for i in train_labels]
+        test_labels = [i.split('/')[-2] for i in test_labels]
+        train_labels = [i.split('/')[-2] for i in train_labels]
 
         all_embeddings = np.concatenate((train_embeddings, test_embeddings),axis=0)
         all_labels = np.concatenate((train_labels, test_labels),axis=0)
@@ -78,6 +80,10 @@ def main(mod):
     # K = 20 # number of retrieved items to query image
     cmc = np.zeros(K) # @k
     aps = []
+    # only search over unique test embeddings
+    test_labels, uniqueidx = np.unique(test_labels, return_index=True)
+    test_embeddings = test_embeddings[uniqueidx]
+
     rs = np.zeros((len(test_embeddings), K))
     for i, embedding in enumerate(test_embeddings):
         # query
@@ -86,21 +92,22 @@ def main(mod):
         else:
             emb_label = label_encoder.inverse_transform([test_labels[i]])[0]
 
-        labelq = sublabels_from_ids([emb_label]) # change labels here
+        labelq = x_from_ids([emb_label]) # change labels here
         dists = np.sum((all_embeddings - embedding) ** 2, axis=1)
-        closest_ids = np.argsort(dists)[:K*40]
+        closest_ids = np.argsort(dists)
         if mod == 'vae': # @k
-            idx = list(set(all_labels[closest_ids]))
+            # pandas unique does not sort. VERY important !!
+            idx = pd.unique(all_labels[closest_ids])
             idx = idx[:K]
             transform = idx
         elif mod == 'random':
             import time
             t = 1000 * time.time() # current time in milliseconds
             np.random.seed(int(t) % 2**32)
-            closest_ids = np.random.choice(list(set(all_labels)), K)
-            transform = closest_ids
+            random_ids = np.random.choice(pd.unique(all_labels), K)
+            transform = random_ids
         else:
-            idx = list(set([dataset[k][1] for k in closest_ids]))
+            idx = pd.unique([dataset[k][1] for k in closest_ids])
             idx = idx[:K]
             transform = label_encoder.inverse_transform(idx)
 
@@ -108,7 +115,7 @@ def main(mod):
         r = np.zeros(K)
 
         y_true = label_encoder2.transform(labelq)
-        y_pred = sublabels_from_ids(transform) # change to sublabels here
+        y_pred = x_from_ids(transform) # change to sublabels here
         y_pred = label_encoder2.transform(np.array(y_pred).ravel())
 
         # k ranking
@@ -120,9 +127,9 @@ def main(mod):
             r[k-1] = tp/K
             # True Positive Identification Rate (TPIR): 
             # Probability of observing the correct identity within the top K ranks
-            if y_true in y_pred[:k]:
-                t = np.where(y_pred==y_true)[0][0]
-                cmc[t:] += 1 
+        if y_true in y_pred:
+            t = np.where(y_pred==y_true)[0][0]
+            cmc[t:] += 1 
 
         # binarize predictions
         y_pred[y_pred != y_true] = 0
@@ -135,23 +142,25 @@ def main(mod):
 
     rss = np.mean(rs, axis=0)
     maP = np.mean(aps)
-    cmc = cmc / (np.max(cmc) + 1e-9)
-    cmcs = cmc
-
-    print(f'model: {mod}')
-    print(f'mAP @ k={K}, cmc at rank-1, cmc at rank-5')
-    print(round(maP*100,2),'&', round(cmc[0]*100,2),'&', round(cmc[4]*100,2))
+    cmcs = cmc / len(test_embeddings)
+    # https://github.com/VisualComputingInstitute/triplet-reid/blob/a538696b89654180f69f19d17679fa48a0346d88/evaluate.py#L189
 
     # log
     try:
-        np.savez('map_npz/subcategories2/' + mod, rss=rss, cmcs=cmcs)
+        np.savez('map_npz/'+ x_from_ids.__name__ +'/' + mod, rss=rss, cmcs=cmcs)
     except FileNotFoundError:
-        os.mkdir('map_npz/subcategories2')
-        np.savez('map_npz/subcategories2/' + mod, rss=rss, cmcs=cmcs)
+        os.mkdir('map_npz/'+ x_from_ids.__name__)
+        np.savez('map_npz/'+ x_from_ids.__name__ +'/' + mod, rss=rss, cmcs=cmcs)
+
+    return mod, round(maP*100,2), round(cmcs[0],2), round(cmcs[4],2)
 
 # %%
-with concurrent.futures.ProcessPoolExecutor() as executor:
-    executor.map(main, models)
+if __name__ == '__main__':
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        res = executor.map(main, models)
+
+    for i in res:
+        print(i)
 
 # single
-# main(models[-2])
+# main(models[-1])
