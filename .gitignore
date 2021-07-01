@@ -14,3 +14,5 @@ deepRanking/map_npz/
 survey/survey_images_backup/
 *.pyc
 detectron2segment/model_final.pth
+detectron2segment/train/
+detectron2segment/val/
