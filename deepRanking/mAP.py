@@ -56,12 +56,12 @@ models.append('random')
 #%%
 def main(mod):
     # print('Getting embeddings')
-    if mod == 'vae' or mod == 'random':
+    if mod in ['vae', 'random']:
         train_embeddings = np.load(os.path.join('../','autoencoder', "models", 'final_model', "train_embeddings.npy"))
         train_labels = np.load(os.path.join('../','autoencoder', "models", 'final_model', "train_labels.npy"), allow_pickle=True)
         test_embeddings = np.load(os.path.join('../','autoencoder', "models", 'final_model', "test_embeddings.npy"))
         test_labels = np.load(os.path.join('../','autoencoder', "models", 'final_model', "test_labels.npy"), allow_pickle=True)
-        
+
         # the loading just gives paths, instead get actual labels
         test_labels = [i.split('/')[-2] for i in test_labels]
         train_labels = [i.split('/')[-2] for i in train_labels]
@@ -87,7 +87,7 @@ def main(mod):
     rs = np.zeros((len(test_embeddings), K))
     for i, embedding in enumerate(test_embeddings):
         # query
-        if mod == 'vae' or mod == 'random':
+        if mod in ['vae', 'random']:
             emb_label = test_labels[i]
         else:
             emb_label = label_encoder.inverse_transform([test_labels[i]])[0]
@@ -98,18 +98,24 @@ def main(mod):
         if mod == 'vae': # @k
             # pandas unique does not sort. VERY important !!
             idx = pd.unique(all_labels[closest_ids])
+            # delete itself
+            idx = np.delete(idx, np.where(idx == emb_label)[0][0])
             idx = idx[:K]
             transform = idx
         elif mod == 'random':
             import time
             t = 1000 * time.time() # current time in milliseconds
             np.random.seed(int(t) % 2**32)
-            random_ids = np.random.choice(pd.unique(all_labels), K)
+            # delete itself
+            idx = pd.unique(all_labels)
+            idx = np.delete(idx, np.where(idx == emb_label)[0][0])
+            random_ids = np.random.choice(idx, K)
             transform = random_ids
         else:
             idx = pd.unique([dataset[k][1] for k in closest_ids])
-            idx = idx[:K]
             transform = label_encoder.inverse_transform(idx)
+            transform = np.delete(transform, np.where(idx == emb_label)[0][0])
+            transform = transform[:K]
 
         p = np.zeros(K)
         r = np.zeros(K)
@@ -134,8 +140,8 @@ def main(mod):
         # binarize predictions
         y_pred[y_pred != y_true] = 0
         y_pred[y_pred == y_true] = 1
-        
-        ap = 1/(y_pred.sum() + 1e-6) * (p @ y_pred)
+
+        ap = 1/(y_pred.sum() + 1e-9) * (p @ y_pred)
 
         aps.append(ap)
         rs[i, :] = r
@@ -156,11 +162,13 @@ def main(mod):
 
 # %%
 if __name__ == '__main__':
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        res = executor.map(main, models)
+    # with concurrent.futures.ProcessPoolExecutor() as executor:
+    #     res = executor.map(main, models)
 
-    for i in res:
-        print(i)
+    # for i in res:
+    #     print(i)
 
 # single
-# main(models[-1])
+    main(models[-2])
+
+# %%
