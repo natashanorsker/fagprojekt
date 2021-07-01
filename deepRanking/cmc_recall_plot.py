@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-plt.style.use('seaborn')
+# plt.style.use('seaborn')
 
-dir = 'map_npz/subcategories/'
+dir = 'map_npz/labels_and_metals_from_ids/'
 models = os.listdir('models')
 npz_files = os.listdir(dir)
 
@@ -29,10 +29,10 @@ plt.plot(np.tile(np.arange(1,K+1), (cmcs.shape[0],1)).T,cmcs.T)
 plt.xticks(range(1,K+1))
 plt.xlabel('Rank')
 plt.ylabel('Identification Accuracy')
-plt.title('CMC Curve for subcategories')
+plt.title('CMC Curve for Categories and metals')
 plt.legend(leg)
 plt.ylim(0,1.02)
-plt.savefig('../Figures/cmc_subcategories.pdf')
+plt.savefig('../Figures/cmc_catmetal.pdf')
 plt.show()
 
 plt.figure(figsize=(6,4))
@@ -40,8 +40,8 @@ plt.plot(np.tile(np.arange(1,K+1), (rss.shape[0],1)).T, rss.T)
 plt.xticks(range(1,K+1))
 plt.xlabel('Rank')
 plt.ylabel('Recall')
-plt.title('Recall at K for subcategories')
+plt.title('Recall at K for Categories and Metals')
 plt.legend(leg)
 plt.ylim(0,1.02)
-plt.savefig('../Figures/rekallatK_subcategories.pdf')
+plt.savefig('../Figures/rekallatK_catmetal.pdf')
 plt.show()

@@ -114,7 +114,7 @@ def main(mod):
         else:
             idx = pd.unique([dataset[k][1] for k in closest_ids])
             transform = label_encoder.inverse_transform(idx)
-            transform = np.delete(transform, np.where(idx == emb_label)[0][0])
+            transform = np.delete(transform, np.where(transform == emb_label)[0][0])
             transform = transform[:K]
 
         p = np.zeros(K)
@@ -158,7 +158,7 @@ def main(mod):
         os.mkdir('map_npz/'+ x_from_ids.__name__)
         np.savez('map_npz/'+ x_from_ids.__name__ +'/' + mod, rss=rss, cmcs=cmcs)
 
-    return mod, round(maP*100,2), round(cmcs[0],2), round(cmcs[4],2)
+    return mod, round(maP*100,2), round(cmcs[0],4), round(cmcs[4],4)
 
 # %%
 if __name__ == '__main__':
